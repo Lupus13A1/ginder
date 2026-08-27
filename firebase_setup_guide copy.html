@@ -1,0 +1,425 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ginder Firebase Setup Guide</title>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;700;900&display=swap");
+
+      :root {
+        --bg: #f0f0f0;
+        --fg: #121212;
+        --red: #d02020;
+        --blue: #1040c0;
+        --yellow: #f0c020;
+        --surface: #ffffff;
+        --border: 3px solid #121212;
+      }
+
+      body {
+        font-family: "Outfit", sans-serif;
+        background-color: var(--bg);
+        color: var(--fg);
+        line-height: 1.6;
+        margin: 0;
+        padding: 40px 20px;
+      }
+
+      .container {
+        max-width: 900px;
+        margin: 0 auto;
+      }
+
+      h1 {
+        font-size: 3rem;
+        text-transform: uppercase;
+        font-weight: 900;
+        letter-spacing: -1px;
+        margin-bottom: 10px;
+        border-bottom: var(--border);
+        padding-bottom: 20px;
+        line-height: 1.1;
+      }
+
+      h2 {
+        font-size: 2rem;
+        text-transform: uppercase;
+        font-weight: 900;
+        margin-top: 50px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        letter-spacing: -0.5px;
+      }
+
+      h2::before {
+        content: "";
+        display: inline-block;
+        width: 24px;
+        height: 24px;
+      }
+
+      h2.red::before {
+        background-color: var(--red);
+        border-radius: 50%;
+        border: var(--border);
+      }
+      h2.blue::before {
+        background-color: var(--blue);
+        border: var(--border);
+      }
+      h2.yellow::before {
+        background-color: var(--yellow);
+        clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+      }
+
+      h3 {
+        font-size: 1.4rem;
+        text-transform: uppercase;
+        font-weight: 800;
+        margin-top: 24px;
+        border-bottom: 2px solid var(--fg);
+        display: inline-block;
+      }
+
+      .card {
+        background-color: var(--surface);
+        border: var(--border);
+        box-shadow: 6px 6px 0 var(--fg);
+        padding: 24px;
+        margin-bottom: 24px;
+      }
+
+      .card-yellow {
+        background-color: #fff9c4;
+      }
+
+      code {
+        background-color: #e0e0e0;
+        padding: 2px 6px;
+        font-weight: 700;
+        border: 1px solid var(--fg);
+        font-size: 0.9em;
+      }
+
+      pre {
+        background-color: var(--fg);
+        color: var(--surface);
+        padding: 20px;
+        overflow-x: auto;
+        border: var(--border);
+        font-size: 0.95rem;
+        box-shadow: 4px 4px 0 var(--red);
+      }
+
+      pre code {
+        background-color: transparent;
+        border: none;
+        color: inherit;
+        padding: 0;
+        font-weight: 400;
+      }
+
+      .step-badge {
+        background-color: var(--fg);
+        color: var(--surface);
+        padding: 4px 12px;
+        font-weight: 900;
+        font-size: 1.2rem;
+        margin-right: 12px;
+        display: inline-block;
+        border: 2px solid var(--fg);
+      }
+
+      ul {
+        list-style-type: square;
+        padding-left: 20px;
+      }
+      li {
+        margin-bottom: 8px;
+      }
+
+      .alert {
+        background-color: var(--red);
+        color: white;
+        padding: 16px;
+        font-weight: 700;
+        border: var(--border);
+        margin: 20px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>
+        Ginder Backend Architecture<br /><span style="color: var(--red)"
+          >Firebase Setup Guide</span
+        >
+      </h1>
+      <p>
+        A comprehensive step-by-step manual to migrate the Bauhaus-themed Ginder
+        app from mock data to a live Firebase backend.
+      </p>
+
+      <!-- STEP 1 -->
+      <h2 class="red">
+        <span class="step-badge">01</span> Project Initialization & CLI Setup
+      </h2>
+      <div class="card">
+        <p>
+          To connect your Flutter app to Firebase seamlessly, use the official
+          FlutterFire CLI.
+        </p>
+        <ol>
+          <li>
+            Go to the
+            <a
+              href="https://console.firebase.google.com/"
+              target="_blank"
+              style="color: var(--blue); font-weight: bold"
+              >Firebase Console</a
+            >
+            and create a new project named <strong>"Ginder Campus"</strong>.
+            Disable Google Analytics for now to keep things simple.
+          </li>
+          <li>
+            Install the Firebase CLI globally on your machine:
+            <pre>npm install -g firebase-tools</pre>
+          </li>
+          <li>
+            Log in to your Google account via the terminal:
+            <pre>firebase login</pre>
+          </li>
+          <li>
+            Activate the FlutterFire CLI:
+            <pre>dart pub global activate flutterfire_cli</pre>
+          </li>
+          <li>
+            Inside your Ginder Flutter project directory
+            (<code>c:\Users\thana\Desktop\lerner_flutter\ginder</code>), run the
+            configuration command. This will automatically register your
+            Android, iOS, and Web apps and generate the
+            <code>firebase_options.dart</code> file.
+            <pre>flutterfire configure</pre>
+          </li>
+        </ol>
+      </div>
+
+      <!-- STEP 2 -->
+      <h2 class="blue">
+        <span class="step-badge">02</span> Flutter Dependencies Setup
+      </h2>
+      <div class="card">
+        <p>
+          Add the necessary Firebase packages to your
+          <code>pubspec.yaml</code> file by running these commands in your
+          terminal:
+        </p>
+        <pre>
+flutter pub add firebase_core firebase_auth cloud_firestore firebase_storage google_sign_in</pre
+        >
+
+        <p>Then, initialize Firebase in your <code>lib/main.dart</code>:</p>
+        <pre><code>import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+  
+  // ... existing UI setup
+  runApp(const GinderApp());
+}</code></pre>
+      </div>
+
+      <!-- STEP 3 -->
+      <h2 class="yellow">
+        <span class="step-badge">03</span> Authentication Setup
+      </h2>
+      <div class="card card-yellow">
+        <p>We need to enable both University Email login and Google SSO.</p>
+        <h3>1. Email & Password</h3>
+        <ul>
+          <li>
+            In the Firebase Console, go to
+            <strong>Build > Authentication</strong>.
+          </li>
+          <li>
+            Click <strong>Get Started</strong>, then go to the
+            <strong>Sign-in method</strong> tab.
+          </li>
+          <li>
+            Select <strong>Email/Password</strong>, enable it, and click Save.
+          </li>
+        </ul>
+
+        <h3>2. Google Sign-In</h3>
+        <ul>
+          <li>
+            In the same <strong>Sign-in method</strong> tab, click
+            <strong>Add new provider</strong> and select
+            <strong>Google</strong>.
+          </li>
+          <li>Enable it, provide a support email, and save.</li>
+        </ul>
+        <div class="alert">
+          IMPORTANT FOR ANDROID: To make Google Sign-In work on Android devices,
+          you must add your SHA-1 certificate fingerprint to the Firebase
+          Project Settings. You can get this by running
+          <code>./gradlew signingReport</code> inside your
+          <code>android/</code> folder.
+        </div>
+      </div>
+
+      <!-- STEP 4 -->
+      <h2 class="red">
+        <span class="step-badge">04</span> Cloud Firestore Database Schema
+      </h2>
+      <div class="card">
+        <p>
+          In the Firebase Console, go to
+          <strong>Build > Firestore Database</strong> and click
+          <strong>Create database</strong> (Start in Test Mode). Here is the
+          NoSQL schema you need to build Ginder:
+        </p>
+
+        <h3>Collection: <code>users</code></h3>
+        <p>
+          Stores the student profile data. Document ID should match the Firebase
+          Auth UID.
+        </p>
+        <pre><code>users/{uid}
+{
+  "uid": "abc123xyz",
+  "name": "Thanathip A.",
+  "nickname": "Art",
+  "age": 21,
+  "faculty": "Architecture & Design",
+  "major": "Urban Planning",
+  "year": "Year 3 (Junior)",
+  "bio": "Coffee and studio all night.",
+  "interests": ["Coffee", "Design", "Museums"],
+  "photos": ["https://firebasestorage...", "https://firebasestorage..."],
+  "isVerifiedStudent": true,
+  "incognitoMode": false,
+  "createdAt": Timestamp
+}</code></pre>
+
+        <h3>Collection: <code>swipes</code></h3>
+        <p>
+          Tracks interactions to prevent showing the same card twice and to
+          detect matches.
+        </p>
+        <pre><code>swipes/{swipeId}
+{
+  "fromUserId": "userA_uid",
+  "toUserId": "userB_uid",
+  "action": "LIKE" // or "PASS", "SUPER_LIKE",
+  "timestamp": Timestamp
+}</code></pre>
+
+        <h3>Collection: <code>matches</code></h3>
+        <p>
+          Created securely via a Cloud Function or client logic when two users
+          mutually "LIKE" each other.
+        </p>
+        <pre><code>matches/{matchId}
+{
+  "users": ["userA_uid", "userB_uid"],
+  "matchedAt": Timestamp,
+  "lastMessage": "Hey! Nice to match.",
+  "lastMessageTime": Timestamp,
+  "unreadCount_userA_uid": 0,
+  "unreadCount_userB_uid": 1
+}</code></pre>
+
+        <h3>Subcollection: <code>matches/{matchId}/messages</code></h3>
+        <p>Stores the chat history for a specific match.</p>
+        <pre><code>messages/{messageId}
+{
+  "senderId": "userA_uid",
+  "text": "Wanna grab matcha at the library?",
+  "timestamp": Timestamp,
+  "isRead": false,
+  "icebreakerTag": "ICEBREAKER" // Optional
+}</code></pre>
+      </div>
+
+      <!-- STEP 5 -->
+      <h2 class="blue">
+        <span class="step-badge">05</span> Cloud Storage Setup
+      </h2>
+      <div class="card">
+        <p>
+          Go to <strong>Build > Storage</strong> and click
+          <strong>Get Started</strong>. This is where student profile pictures
+          will be uploaded.
+        </p>
+        <p>Structure your buckets like this to keep it organized:</p>
+        <ul>
+          <li><code>/profile_photos/{uid}/photo_1.jpg</code></li>
+          <li><code>/profile_photos/{uid}/photo_2.jpg</code></li>
+        </ul>
+      </div>
+
+      <!-- STEP 6 -->
+      <h2 class="yellow">
+        <span class="step-badge">06</span> Security Rules Configuration
+      </h2>
+      <div class="card card-yellow">
+        <p>
+          Update your rules to ensure students can only edit their own profiles
+          but can read other public profiles. Paste this in the
+          <strong>Rules</strong> tab of Firestore:
+        </p>
+        <pre><code>rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Require authentication for all access
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Users can read any profile, but only write to their own
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // Users can only see and write matches they are part of
+    match /matches/{matchId} {
+      allow read, write: if isAuthenticated() && request.auth.uid in resource.data.users;
+      
+      // Messages within a match
+      match /messages/{messageId} {
+        allow read, write: if isAuthenticated() && request.auth.uid in get(/databases/$(database)/documents/matches/$(matchId)).data.users;
+      }
+    }
+    
+    // Users can only record their own swipes
+    match /swipes/{swipeId} {
+      allow read: if isAuthenticated() && request.auth.uid == resource.data.fromUserId;
+      allow create: if isAuthenticated() && request.auth.uid == request.resource.data.fromUserId;
+    }
+  }
+}</code></pre>
+      </div>
+
+      <!-- Conclusion -->
+      <div style="text-align: center; margin-top: 60px; margin-bottom: 40px">
+        <p style="font-weight: 900; font-size: 1.5rem; letter-spacing: 2px">
+          READY FOR PRODUCTION
+        </p>
+        <p>
+          Following this guide sets up a robust, scalable backend perfectly
+          aligned with Ginder's frontend providers.
+        </p>
+      </div>
+    </div>
+  </body>
+</html>
