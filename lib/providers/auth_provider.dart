@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../models/student_profile.dart';
+import '../services/database_service.dart';
 
 class AuthProvider extends ChangeNotifier {
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final DatabaseService _db = DatabaseService();
+
   StudentProfile _currentUser = StudentProfile.currentUser;
-  bool _isAuthenticated = true;
-  bool _isOnboarded = true;
   bool _isProfileSetupComplete = true;
 
   // Settings
@@ -18,9 +22,42 @@ class AuthProvider extends ChangeNotifier {
   bool _notifyLikes = true;
   final List<String> _blockedUsers = ['blocked_user_99'];
 
+  AuthProvider() {
+    _auth.authStateChanges().listen((User? user) async {
+      if (user != null) {
+        await _fetchUserProfile(user.uid);
+      }
+      notifyListeners();
+    });
+  }
+
+  Future<void> _fetchUserProfile(String uid) async {
+    try {
+      final data = await _db.getUserProfile(uid);
+      if (data != null) {
+        _currentUser = StudentProfile(
+          id: data['uid'] ?? uid,
+          name: data['name'] ?? 'Student',
+          nickname: data['nickname'] ?? 'Student',
+          age: data['age'] ?? 20,
+          faculty: data['faculty'] ?? '',
+          major: data['major'] ?? '',
+          year: data['year'] ?? '',
+          bio: data['bio'] ?? '',
+          photos: List<String>.from(data['photos'] ?? []),
+          interests: List<String>.from(data['interests'] ?? []),
+          studentEmail: data['email'] ?? '',
+          isVerifiedStudent: data['isVerifiedStudent'] ?? false,
+        );
+      }
+    } catch (e) {
+      debugPrint('Error fetching user profile: $e');
+    }
+  }
+
   StudentProfile get currentUser => _currentUser;
-  bool get isAuthenticated => _isAuthenticated;
-  bool get isOnboarded => _isOnboarded;
+  bool get isAuthenticated => _auth.currentUser != null;
+  bool get isOnboarded => true;
   bool get isProfileSetupComplete => _isProfileSetupComplete;
 
   double get maxDistanceKm => _maxDistanceKm;
@@ -33,12 +70,30 @@ class AuthProvider extends ChangeNotifier {
   bool get notifyLikes => _notifyLikes;
   List<String> get blockedUsers => List.unmodifiable(_blockedUsers);
 
-  void login({required String email, required String password}) {
-    _isAuthenticated = true;
-    notifyListeners();
+  bool _isValidEmailDomain(String email) {
+    return email.trim().toLowerCase().endsWith('@email.kmutnb.ac.th');
   }
 
-  void register({
+  Future<void> login({required String email, required String password}) async {
+    if (!_isValidEmailDomain(email)) {
+      throw 'Please use your @email.kmutnb.ac.th student email.';
+    }
+    try {
+      UserCredential cred = await _auth.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+
+      if (!cred.user!.emailVerified) {
+        await _auth.signOut();
+        throw 'Please check your inbox and click the verification link before logging in.';
+      }
+    } on FirebaseAuthException catch (e) {
+      throw e.message ?? 'Login failed';
+    }
+  }
+
+  Future<void> register({
     required String name,
     required String nickname,
     required int age,
@@ -47,19 +102,85 @@ class AuthProvider extends ChangeNotifier {
     required String year,
     required String email,
     required String password,
-  }) {
-    _currentUser = _currentUser.copyWith(
-      name: name,
-      nickname: nickname,
-      age: age,
-      faculty: faculty,
-      major: major,
-      year: year,
-      studentEmail: email,
-    );
-    _isAuthenticated = true;
-    _isProfileSetupComplete = false;
-    notifyListeners();
+  }) async {
+    if (!_isValidEmailDomain(email)) {
+      throw 'Registration restricted to @email.kmutnb.ac.th domain.';
+    }
+    try {
+      UserCredential cred = await _auth.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+
+      String uid = cred.user!.uid;
+
+      await _db.saveUserProfile(
+        uid: uid,
+        email: email,
+        name: name,
+        nickname: nickname,
+        age: age,
+        faculty: faculty,
+        major: major,
+        year: year,
+      );
+
+      await cred.user!.sendEmailVerification();
+      await _auth.signOut(); // Prevent automatic login until verified
+
+      throw 'VERIFICATION_REQUIRED';
+    } on FirebaseAuthException catch (e) {
+      throw e.message ?? 'Registration failed';
+    }
+  }
+
+  Future<void> signInWithGoogle() async {
+    try {
+      GoogleAuthProvider googleProvider = GoogleAuthProvider();
+      // Force Google login screen to only allow KMUTNB domain
+      googleProvider.setCustomParameters({'hd': 'email.kmutnb.ac.th'});
+
+      UserCredential cred;
+
+      if (kIsWeb) {
+        cred = await _auth.signInWithPopup(googleProvider);
+      } else {
+        // On mobile, this will open a secure webview for Google Auth
+        cred = await _auth.signInWithProvider(googleProvider);
+      }
+
+      final email = cred.user!.email ?? '';
+
+      // Double check the domain in case user found a workaround
+      if (!_isValidEmailDomain(email)) {
+        await cred.user!
+            .delete(); // Delete the mistakenly created Firebase Auth user
+        await logout();
+        throw 'Access denied. You must use an @email.kmutnb.ac.th account.';
+      }
+
+      String uid = cred.user!.uid;
+      final existingData = await _db.getUserProfile(uid);
+
+      if (existingData == null) {
+        // First time signing in with this Google account
+        await _db.saveUserProfile(
+          uid: uid,
+          email: email,
+          name: cred.user!.displayName ?? 'New Student',
+          nickname: cred.user!.displayName?.split(' ').first ?? 'Student',
+          age: 20, // Cannot get age from Google easily, default to 20
+          faculty: 'Unknown',
+          major: 'Unknown',
+          year: 'Unknown',
+        );
+        _isProfileSetupComplete = false;
+      }
+
+      notifyListeners();
+    } catch (e) {
+      throw e.toString();
+    }
   }
 
   void completeProfileSetup({
@@ -71,6 +192,7 @@ class AuthProvider extends ChangeNotifier {
     required String campusHangout,
     required List<String> photos,
   }) {
+    // Ideally this would save to Firestore as well
     _currentUser = _currentUser.copyWith(
       bio: bio,
       interests: interests,
@@ -91,7 +213,7 @@ class AuthProvider extends ChangeNotifier {
   }
 
   void completeOnboarding() {
-    _isOnboarded = true;
+    // Should save to local storage in real app
     notifyListeners();
   }
 
@@ -128,8 +250,9 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  void logout() {
-    _isAuthenticated = false;
+  Future<void> logout() async {
+    await _auth.signOut();
+    _currentUser = StudentProfile.currentUser; // reset to default
     notifyListeners();
   }
 }

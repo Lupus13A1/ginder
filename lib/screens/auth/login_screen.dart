@@ -20,7 +20,7 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController(
-    text: 'art.thana@student.chula.ac.th',
+    text: 'art.thana@email.kmutnb.ac.th',
   );
   final _passwordController = TextEditingController(text: '••••••••');
   bool _isLoading = false;
@@ -39,31 +39,59 @@ class _LoginScreenState extends State<LoginScreen> {
     });
   }
 
-  void _handleLogin() {
+  Future<void> _handleLogin() async {
     setState(() => _isLoading = true);
-    Future.delayed(const Duration(milliseconds: 600), () {
+
+    try {
+      await context.read<AuthProvider>().login(
+        email: _emailController.text,
+        password: _passwordController.text,
+      );
       if (mounted) {
-        context.read<AuthProvider>().login(
-          email: _emailController.text,
-          password: _passwordController.text,
-        );
         Navigator.of(context).pushReplacementNamed(AppRoutes.home);
       }
-    });
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString()),
+            backgroundColor: BauhausColors.primaryRed,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
   }
 
-  void _handleGoogleAuth() {
+  Future<void> _handleGoogleAuth() async {
     setState(() => _isLoading = true);
-    // Mock Google SSO flow
-    Future.delayed(const Duration(milliseconds: 800), () {
+
+    try {
+      await context.read<AuthProvider>().signInWithGoogle();
       if (mounted) {
-        context.read<AuthProvider>().login(
-          email: 'google.user@student.chula.ac.th',
-          password: 'google_sso_token',
-        );
-        Navigator.of(context).pushReplacementNamed(AppRoutes.home);
+        if (context.read<AuthProvider>().isProfileSetupComplete) {
+          Navigator.of(context).pushReplacementNamed(AppRoutes.home);
+        } else {
+          Navigator.of(context).pushReplacementNamed(AppRoutes.profileSetup);
+        }
       }
-    });
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString()),
+            backgroundColor: BauhausColors.primaryRed,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
   }
 
   @override
@@ -125,7 +153,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   children: [
                     BauhausTextField(
                       label: 'UNIVERSITY EMAIL / STUDENT ID',
-                      hintText: 'student.name@chula.ac.th',
+                      hintText: 'student.name@email.kmutnb.ac.th',
                       controller: _emailController,
                       keyboardType: TextInputType.emailAddress,
                       prefixIcon: const Icon(

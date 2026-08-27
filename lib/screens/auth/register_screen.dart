@@ -24,7 +24,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _ageController = TextEditingController(text: '21');
   final _majorController = TextEditingController(text: 'Urban Planning');
   final _emailController = TextEditingController(
-    text: 'art.thana@student.chula.ac.th',
+    text: 'art.thana@email.kmutnb.ac.th',
   );
   final _passwordController = TextEditingController(text: 'password123');
 
@@ -50,6 +50,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
     'Postgraduate',
   ];
 
+  bool _isLoading = false;
+
   @override
   void dispose() {
     _nameController.dispose();
@@ -61,42 +63,85 @@ class _RegisterScreenState extends State<RegisterScreen> {
     super.dispose();
   }
 
-  void _handleRegister() {
+  Future<void> _handleRegister() async {
+    setState(() => _isLoading = true);
     final age = int.tryParse(_ageController.text) ?? 20;
-    context.read<AuthProvider>().register(
-      name: _nameController.text.isNotEmpty
-          ? _nameController.text
-          : 'New Student',
-      nickname: _nicknameController.text.isNotEmpty
-          ? _nicknameController.text
-          : 'Student',
-      age: age,
-      faculty: _selectedFaculty,
-      major: _majorController.text.isNotEmpty
-          ? _majorController.text
-          : 'General Studies',
-      year: _selectedYear,
-      email: _emailController.text.isNotEmpty
-          ? _emailController.text
-          : 'student@university.ac.th',
-      password: _passwordController.text,
-    );
 
-    Navigator.of(context).pushReplacementNamed(AppRoutes.profileSetup);
+    try {
+      await context.read<AuthProvider>().register(
+        name: _nameController.text.isNotEmpty
+            ? _nameController.text
+            : 'New Student',
+        nickname: _nicknameController.text.isNotEmpty
+            ? _nicknameController.text
+            : 'Student',
+        age: age,
+        faculty: _selectedFaculty,
+        major: _majorController.text.isNotEmpty
+            ? _majorController.text
+            : 'General Studies',
+        year: _selectedYear,
+        email: _emailController.text.isNotEmpty
+            ? _emailController.text
+            : 'student@university.ac.th',
+        password: _passwordController.text,
+      );
+      // We will never hit this because register() either throws VERIFICATION_REQUIRED or FirebaseAuthException
+    } catch (e) {
+      if (mounted) {
+        if (e.toString() == 'VERIFICATION_REQUIRED') {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Registration successful! Please check your email to verify your account.',
+              ),
+              backgroundColor: BauhausColors.primaryBlue,
+              duration: Duration(seconds: 5),
+            ),
+          );
+          Navigator.of(context).pushReplacementNamed(AppRoutes.login);
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(e.toString()),
+              backgroundColor: BauhausColors.primaryRed,
+            ),
+          );
+        }
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
   }
 
-  void _handleGoogleRegister() {
-    context.read<AuthProvider>().register(
-      name: 'Google User',
-      nickname: 'Google',
-      age: 20,
-      faculty: 'Science & Tech',
-      major: 'Computer Science',
-      year: 'Year 2 (Sophomore)',
-      email: 'google.user@student.chula.ac.th',
-      password: 'google_sso_token',
-    );
-    Navigator.of(context).pushReplacementNamed(AppRoutes.profileSetup);
+  Future<void> _handleGoogleRegister() async {
+    setState(() => _isLoading = true);
+
+    try {
+      await context.read<AuthProvider>().signInWithGoogle();
+      if (mounted) {
+        if (context.read<AuthProvider>().isProfileSetupComplete) {
+          Navigator.of(context).pushReplacementNamed(AppRoutes.home);
+        } else {
+          Navigator.of(context).pushReplacementNamed(AppRoutes.profileSetup);
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString()),
+            backgroundColor: BauhausColors.primaryRed,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
   }
 
   @override
@@ -296,7 +341,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     const SizedBox(height: 14),
                     BauhausTextField(
                       label: 'UNIVERSITY EMAIL',
-                      hintText: 'art.thana@student.chula.ac.th',
+                      hintText: 'art.thana@email.kmutnb.ac.th',
                       controller: _emailController,
                       keyboardType: TextInputType.emailAddress,
                       prefixIcon: const Icon(
@@ -322,6 +367,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       text: 'CONTINUE TO PROFILE SETUP',
                       isFullWidth: true,
                       height: 52,
+                      isLoading: _isLoading,
                       variant: BauhausButtonVariant.primaryBlue,
                       onPressed: _handleRegister,
                     ),
@@ -351,6 +397,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       text: 'REGISTER WITH GOOGLE',
                       isFullWidth: true,
                       height: 52,
+                      isLoading: _isLoading,
                       icon: const FaIcon(FontAwesomeIcons.google, size: 20),
                       onPressed: _handleGoogleRegister,
                     ),

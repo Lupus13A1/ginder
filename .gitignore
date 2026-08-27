@@ -43,3 +43,17 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Firebase configs (Optional but recommended for public repos to prevent quota scraping)
+google-services.json
+GoogleService-Info.plist
+firebase_options.dart
+firebase.json
+
+# Environment variables & Secret Keys
+.env
+.env.*
+*.jks
+*.keystore
+key.properties
+key.jks
