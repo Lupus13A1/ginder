@@ -41,4 +41,44 @@ class ChatMessage {
       icebreakerTag: icebreakerTag ?? this.icebreakerTag,
     );
   }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'senderId': senderId,
+      'text': text,
+      'timestamp': timestamp.millisecondsSinceEpoch,
+      'isRead': isRead,
+      'imageUrl': ?imageUrl,
+      'icebreakerTag': ?icebreakerTag,
+    };
+  }
+
+  factory ChatMessage.fromMap(
+    Map<dynamic, dynamic> map, {
+    required String currentUserId,
+    String? id,
+  }) {
+    final senderId = map['senderId']?.toString() ?? '';
+    final rawTime = map['timestamp'];
+    DateTime time;
+    if (rawTime is int) {
+      time = DateTime.fromMillisecondsSinceEpoch(rawTime);
+    } else if (rawTime is String) {
+      time = DateTime.tryParse(rawTime) ?? DateTime.now();
+    } else {
+      time = DateTime.now();
+    }
+
+    return ChatMessage(
+      id: id ?? map['id']?.toString() ?? '',
+      senderId: senderId,
+      text: map['text']?.toString() ?? '',
+      timestamp: time,
+      isFromMe: senderId == currentUserId,
+      isRead: map['isRead'] == true,
+      imageUrl: map['imageUrl']?.toString(),
+      icebreakerTag: map['icebreakerTag']?.toString(),
+    );
+  }
 }

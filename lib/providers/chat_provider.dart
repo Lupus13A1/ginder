@@ -1,17 +1,51 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
-import '../models/chat_message.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_database/firebase_database.dart';
 import '../models/match_model.dart';
 import '../models/student_profile.dart';
+import '../services/database_service.dart';
 
 class ChatProvider extends ChangeNotifier {
+  final DatabaseService _db = DatabaseService();
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+
   List<MatchConversation> _conversations = [];
   String? _activeConversationId;
+  String _currentUserId = '';
+  StreamSubscription<DatabaseEvent>? _matchesSubscription;
+  StreamSubscription<User?>? _authSubscription;
+  bool _isLoading = true;
 
   ChatProvider() {
-    _conversations = MatchConversation.sampleMatches;
+    _authSubscription = _auth.authStateChanges().listen((User? user) {
+      if (user != null) {
+        initForUser(user.uid);
+      } else {
+        _matchesSubscription?.cancel();
+        _currentUserId = '';
+        _conversations = [];
+        _isLoading = false;
+        notifyListeners();
+      }
+    });
+
+    final currentUid = _auth.currentUser?.uid;
+    if (currentUid != null) {
+      initForUser(currentUid);
+    } else {
+      _isLoading = false;
+    }
   }
 
+  @override
+  void dispose() {
+    _matchesSubscription?.cancel();
+    _authSubscription?.cancel();
+    super.dispose();
+  }
+
+  bool get isLoading => _isLoading;
   List<MatchConversation> get conversations =>
       List.unmodifiable(_conversations);
 
@@ -45,6 +79,35 @@ class ChatProvider extends ChangeNotifier {
     }
   }
 
+  /// Initialize real-time match and chat streams for authenticated user
+  Future<void> initForUser(String uid) async {
+    if (_currentUserId == uid && _matchesSubscription != null) return;
+
+    _currentUserId = uid;
+    _isLoading = true;
+    notifyListeners();
+
+    await _matchesSubscription?.cancel();
+
+    // Ensure user has initial sample match to chat with if database is fresh
+    await _db.seedInitialMatchIfEmpty(uid);
+
+    _matchesSubscription = _db.getMatchesStream().listen((event) async {
+      try {
+        final parsed = await _db.parseMatchesFromSnapshot(
+          event.snapshot,
+          _currentUserId,
+        );
+        _conversations = parsed;
+      } catch (e) {
+        debugPrint('Error parsing matches stream: $e');
+      } finally {
+        _isLoading = false;
+        notifyListeners();
+      }
+    });
+  }
+
   void setActiveConversation(String? id) {
     _activeConversationId = id;
     if (id != null) {
@@ -53,105 +116,59 @@ class ChatProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  void addMatchFromDiscover(StudentProfile profile) {
-    final existing = getConversationByPeerId(profile.id);
+  /// Create match in Firebase when a match is found from Discover swipe
+  Future<void> addMatchFromDiscover(StudentProfile peer) async {
+    final myUid = _currentUserId.isNotEmpty
+        ? _currentUserId
+        : (_auth.currentUser?.uid ?? 'my_user_id');
+
+    final users = [myUid, peer.id]..sort();
+    final matchId = '${users[0]}_${users[1]}';
+
+    final existing = getConversationById(matchId);
     if (existing == null) {
-      final newConv = MatchConversation(
-        id: 'conv_${DateTime.now().millisecondsSinceEpoch}',
-        peer: profile,
-        matchedAt: DateTime.now(),
-        messages: [],
-        unreadCount: 0,
-      );
-      _conversations.insert(0, newConv);
-      notifyListeners();
+      // Create match document in Firebase
+      final matchRef = FirebaseDatabase.instanceFor(
+        app: FirebaseDatabase.instance.app,
+        databaseURL:
+            'https://ginder-da14f-default-rtdb.asia-southeast1.firebasedatabase.app/',
+      ).ref('matches/$matchId');
+
+      await matchRef.set({
+        'matchId': matchId,
+        'users': {users[0]: true, users[1]: true},
+        'matchedAt': ServerValue.timestamp,
+        'lastMessage': 'It\'s a Match! Start the conversation.',
+        'lastMessageAt': ServerValue.timestamp,
+        'unreadCounts': {myUid: 0, peer.id: 0},
+      });
     }
   }
 
-  void sendMessage({
+  /// Send a real-time message via Firebase Realtime Database
+  Future<void> sendMessage({
     required String conversationId,
     required String text,
     String? imageUrl,
     String? icebreakerTag,
-  }) {
-    final index = _conversations.indexWhere((c) => c.id == conversationId);
-    if (index == -1) return;
+  }) async {
+    final senderId = _currentUserId.isNotEmpty
+        ? _currentUserId
+        : (_auth.currentUser?.uid ?? 'my_user_id');
 
-    final conv = _conversations[index];
-    final newMsg = ChatMessage(
-      id: 'msg_${DateTime.now().millisecondsSinceEpoch}',
-      senderId: 'my_user_id',
+    await _db.sendChatMessage(
+      matchId: conversationId,
+      senderId: senderId,
       text: text,
-      timestamp: DateTime.now(),
-      isFromMe: true,
-      isRead: true,
       imageUrl: imageUrl,
       icebreakerTag: icebreakerTag,
     );
-
-    final updatedMessages = List<ChatMessage>.from(conv.messages)..add(newMsg);
-    final updatedConv = conv.copyWith(messages: updatedMessages);
-
-    _conversations.removeAt(index);
-    _conversations.insert(0, updatedConv);
-    notifyListeners();
-
-    // Trigger realistic automated peer response after 1.8 seconds
-    _schedulePeerResponse(conversationId, conv.peer);
   }
 
-  void _schedulePeerResponse(String conversationId, StudentProfile peer) {
-    Timer(const Duration(milliseconds: 1800), () {
-      final index = _conversations.indexWhere((c) => c.id == conversationId);
-      if (index == -1) return;
-
-      final conv = _conversations[index];
-      final responses = [
-        "Sounds great! Are you free after 4 PM around the ${peer.campusHangout}?",
-        "Haha totally agree! Love your style and taste in music.",
-        "Let's definitely meet up! I'm usually studying at the library cafe on weekdays.",
-        "That's so cool! Not many people from other faculties know about that.",
-      ];
-      final responseText = (responses..shuffle()).first;
-
-      final peerMsg = ChatMessage(
-        id: 'msg_peer_${DateTime.now().millisecondsSinceEpoch}',
-        senderId: peer.id,
-        text: responseText,
-        timestamp: DateTime.now(),
-        isFromMe: false,
-        isRead: _activeConversationId == conversationId,
-      );
-
-      final updatedMessages = List<ChatMessage>.from(conv.messages)
-        ..add(peerMsg);
-      final updatedConv = conv.copyWith(
-        messages: updatedMessages,
-        unreadCount: _activeConversationId == conversationId
-            ? 0
-            : conv.unreadCount + 1,
-      );
-
-      _conversations.removeAt(index);
-      _conversations.insert(0, updatedConv);
-      notifyListeners();
-    });
-  }
-
+  /// Mark all messages in conversation as read
   void markAsRead(String conversationId) {
-    final index = _conversations.indexWhere((c) => c.id == conversationId);
-    if (index == -1) return;
-
-    final conv = _conversations[index];
-    if (conv.unreadCount > 0) {
-      final updatedMessages = conv.messages
-          .map((m) => m.copyWith(isRead: true))
-          .toList();
-      _conversations[index] = conv.copyWith(
-        unreadCount: 0,
-        messages: updatedMessages,
-      );
-      notifyListeners();
+    if (_currentUserId.isNotEmpty) {
+      _db.markMatchAsRead(conversationId, _currentUserId);
     }
   }
 }

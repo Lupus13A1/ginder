@@ -382,10 +382,7 @@ class StudentProfile {
     studentEmail: 'art.thana@student.chula.ac.th',
     bio:
         'Obsessed with modernist grid layouts, Brutalism, espresso shots, and urban exploration. Looking for study partners and concert buddies.',
-    photos: [
-      'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=700&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=700&auto=format&fit=crop&q=80',
-    ],
+    photos: [],
     interests: [
       'Architecture',
       'Indie Rock',

@@ -8,6 +8,7 @@ import '../../widgets/bauhaus_card.dart';
 import '../../widgets/bauhaus_text_field.dart';
 import '../../widgets/bauhaus_app_bar.dart';
 import '../../providers/auth_provider.dart';
+import '../../services/google_drive_service.dart';
 
 class EditProfileScreen extends StatefulWidget {
   const EditProfileScreen({super.key});
@@ -89,6 +90,72 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _photos = List.from(user.photos);
   }
 
+  bool _isUploadingPhoto = false;
+  int? _uploadingSlotIndex;
+
+  Future<void> _handlePhotoUpload(int index) async {
+    if (_isUploadingPhoto) return;
+
+    final source = await GoogleDriveService.showImageSourceDialog(context);
+    if (source == null) return;
+
+    final picked = await GoogleDriveService.pickImage(source);
+    if (picked == null) return;
+
+    setState(() {
+      _isUploadingPhoto = true;
+      _uploadingSlotIndex = index;
+    });
+
+    final result = await GoogleDriveService.uploadImage(picked);
+
+    if (!mounted) return;
+
+    setState(() {
+      _isUploadingPhoto = false;
+      _uploadingSlotIndex = null;
+    });
+
+    if (result.isSuccess && result.url != null) {
+      setState(() {
+        if (index < _photos.length) {
+          _photos[index] = result.url!;
+        } else {
+          _photos.add(result.url!);
+        }
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'PHOTO SAVED TO GOOGLE DRIVE! TAP CHECKMARK TO SAVE PROFILE.',
+          ),
+          backgroundColor: BauhausColors.primaryRed,
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(result.errorMessage ?? 'Upload to Google Drive failed'),
+          backgroundColor: BauhausColors.foreground,
+          duration: const Duration(seconds: 4),
+        ),
+      );
+    }
+  }
+
+  void _removePhoto(int index) {
+    if (_photos.length <= 1) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('YOU MUST KEEP AT LEAST 1 PROFILE PHOTO'),
+          backgroundColor: BauhausColors.foreground,
+        ),
+      );
+      return;
+    }
+    setState(() => _photos.removeAt(index));
+  }
+
   @override
   void dispose() {
     _nameController.dispose();
@@ -103,6 +170,18 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   void _save() {
+    if (_photos.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            '⚠️ คุณต้องมีรูปภาพโปรไฟล์อย่างน้อย 1 รูป (AT LEAST 1 PHOTO REQUIRED)',
+          ),
+          backgroundColor: BauhausColors.primaryRed,
+        ),
+      );
+      return;
+    }
+
     final auth = context.read<AuthProvider>();
     final updated = auth.currentUser.copyWith(
       name: _nameController.text,
@@ -173,6 +252,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     physics: const NeverScrollableScrollPhysics(),
                     itemCount: 6,
                     itemBuilder: (context, index) {
+                      final isUploadingThis =
+                          _isUploadingPhoto && _uploadingSlotIndex == index;
+
                       if (index < _photos.length) {
                         return Container(
                           decoration: BoxDecoration(
@@ -184,16 +266,30 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           child: Stack(
                             fit: StackFit.expand,
                             children: [
-                              Image.network(_photos[index], fit: BoxFit.cover),
+                              Image.network(
+                                _photos[index],
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) =>
+                                    const Center(
+                                      child: Icon(Icons.person, size: 36),
+                                    ),
+                              ),
+                              if (isUploadingThis)
+                                Container(
+                                  color: Colors.black54,
+                                  child: const Center(
+                                    child: CircularProgressIndicator(
+                                      color: BauhausColors.primaryYellow,
+                                      strokeWidth: 2.5,
+                                    ),
+                                  ),
+                                ),
+                              // Delete button
                               Positioned(
                                 top: 4,
                                 right: 4,
                                 child: GestureDetector(
-                                  onTap: () {
-                                    if (_photos.length > 1) {
-                                      setState(() => _photos.removeAt(index));
-                                    }
-                                  },
+                                  onTap: () => _removePhoto(index),
                                   child: Container(
                                     padding: const EdgeInsets.all(2),
                                     color: BauhausColors.primaryRed,
@@ -205,18 +301,43 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                   ),
                                 ),
                               ),
+                              // Replace button
+                              Positioned(
+                                bottom: 4,
+                                left: 4,
+                                child: GestureDetector(
+                                  onTap: () => _handlePhotoUpload(index),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 4,
+                                      vertical: 2,
+                                    ),
+                                    color: BauhausColors.surface,
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const Icon(
+                                          Icons.sync,
+                                          size: 10,
+                                          color: BauhausColors.foreground,
+                                        ),
+                                        const SizedBox(width: 2),
+                                        Text(
+                                          'EDIT',
+                                          style: BauhausTextStyles.badge()
+                                              .copyWith(fontSize: 7),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
                             ],
                           ),
                         );
                       } else {
                         return GestureDetector(
-                          onTap: () {
-                            setState(() {
-                              _photos.add(
-                                'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=700&auto=format&fit=crop&q=80',
-                              );
-                            });
-                          },
+                          onTap: () => _handlePhotoUpload(index),
                           child: Container(
                             decoration: BoxDecoration(
                               color: BauhausColors.cardYellow.withAlpha(90),
@@ -225,12 +346,29 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                 width: 1.5,
                               ),
                             ),
-                            child: const Center(
-                              child: Icon(
-                                Icons.add,
-                                color: BauhausColors.foreground,
-                              ),
-                            ),
+                            child: isUploadingThis
+                                ? const Center(
+                                    child: CircularProgressIndicator(
+                                      color: BauhausColors.primaryRed,
+                                      strokeWidth: 2.5,
+                                    ),
+                                  )
+                                : Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      const Icon(
+                                        Icons.add_a_photo,
+                                        color: BauhausColors.foreground,
+                                        size: 20,
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        'ADD',
+                                        style: BauhausTextStyles.badge()
+                                            .copyWith(fontSize: 8),
+                                      ),
+                                    ],
+                                  ),
                           ),
                         );
                       }

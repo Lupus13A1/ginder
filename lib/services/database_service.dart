@@ -1,6 +1,9 @@
+import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_database/firebase_database.dart';
 import '../models/student_profile.dart';
+import '../models/match_model.dart';
 
 class DatabaseService {
   final FirebaseDatabase _db = FirebaseDatabase.instanceFor(
@@ -237,50 +240,320 @@ class DatabaseService {
     return false;
   }
 
+  // Cache of student profiles to avoid repeated DB lookups
+  final Map<String, StudentProfile> _profileCache = {};
+
+  /// Get student profile by UID (cached or from Firebase RTDB)
+  Future<StudentProfile> getStudentProfile(String uid) async {
+    if (_profileCache.containsKey(uid)) {
+      return _profileCache[uid]!;
+    }
+
+    try {
+      final userSnap = await _db.ref('users/$uid').get();
+      if (userSnap.exists && userSnap.value != null) {
+        final map = _mapFromSnapshot(userSnap.value);
+        if (map != null) {
+          final profile = StudentProfile.fromMap(map, id: uid);
+          _profileCache[uid] = profile;
+          return profile;
+        }
+      }
+    } catch (_) {}
+
+    // Fallback to sample profiles
+    try {
+      final sample = StudentProfile.sampleProfiles.firstWhere(
+        (p) => p.id == uid,
+      );
+      _profileCache[uid] = sample;
+      return sample;
+    } catch (_) {
+      final fallback = StudentProfile(
+        id: uid,
+        name: 'Campus Student',
+        nickname: 'Student',
+        age: 20,
+        faculty: 'Faculty of Engineering',
+        major: 'General Studies',
+        year: 'Year 2',
+        studentEmail: '$uid@email.kmutnb.ac.th',
+        bio: 'Student at KMUTNB',
+        photos: const [],
+        interests: const ['Campus Life'],
+        commonInterests: const [],
+        anthemSong: 'Campus Anthem',
+        anthemArtist: 'KMUTNB',
+        favoriteMovie: 'Inception',
+        campusHangout: 'Central Library',
+      );
+      _profileCache[uid] = fallback;
+      return fallback;
+    }
+  }
+
   /// Create a match document when mutual like happens
   Future<void> _createMatchRoom(String uid1, String uid2) async {
-    // Sort UIDs alphabetically to ensure consistent Match ID
     List<String> users = [uid1, uid2]..sort();
     String matchId = '${users[0]}_${users[1]}';
 
-    await _db.ref('matches/$matchId').set({
-      'matchId': matchId,
-      'users': {users[0]: true, users[1]: true},
-      'matchedAt': ServerValue.timestamp,
-      'lastMessage': '',
-      'lastMessageAt': ServerValue.timestamp,
-      'unreadCounts': {uid1: 0, uid2: 0},
-    });
-
-    // Optionally: Trigger notifications to both users here
+    final matchRef = _db.ref('matches/$matchId');
+    final snap = await matchRef.get();
+    if (!snap.exists) {
+      await matchRef.set({
+        'matchId': matchId,
+        'users': {users[0]: true, users[1]: true},
+        'matchedAt': ServerValue.timestamp,
+        'lastMessage': 'It\'s a Match! Say hello!',
+        'lastMessageAt': ServerValue.timestamp,
+        'unreadCounts': {uid1: 0, uid2: 0},
+      });
+    }
   }
 
   // ---------------------------------------------------------------------------
-  // 3. MESSAGING
+  // 3. MESSAGING & REALTIME CHAT
   // ---------------------------------------------------------------------------
 
+  /// Stream of all matches for real-time listener
+  Stream<DatabaseEvent> getMatchesStream() {
+    return _db.ref('matches').onValue;
+  }
+
+  /// Parse Firebase Realtime Database matches snapshot into MatchConversation list
+  Future<List<MatchConversation>> parseMatchesFromSnapshot(
+    DataSnapshot snapshot,
+    String currentUserId,
+  ) async {
+    if (!snapshot.exists || snapshot.value is! Map) return [];
+
+    final Map matchesMap = snapshot.value as Map;
+    final List<MatchConversation> result = [];
+
+    for (final entry in matchesMap.entries) {
+      final matchId = entry.key.toString();
+      final matchData = entry.value;
+
+      if (matchData is Map) {
+        final usersMap = matchData['users'];
+        if (usersMap is Map && usersMap.containsKey(currentUserId)) {
+          // Find the peer UID
+          String? peerUid;
+          usersMap.forEach((uId, isParticipant) {
+            if (uId.toString() != currentUserId) {
+              peerUid = uId.toString();
+            }
+          });
+
+          if (peerUid != null) {
+            final peerProfile = await getStudentProfile(peerUid!);
+            final conversation = MatchConversation.fromFirebaseMap(
+              matchId: matchId,
+              map: matchData,
+              peer: peerProfile,
+              currentUserId: currentUserId,
+            );
+            result.add(conversation);
+          }
+        }
+      }
+    }
+
+    // Sort by last message or matchedAt descending (newest first)
+    result.sort((a, b) {
+      final aTime = a.lastMessage?.timestamp ?? a.matchedAt;
+      final bTime = b.lastMessage?.timestamp ?? b.matchedAt;
+      return bTime.compareTo(aTime);
+    });
+
+    return result;
+  }
+
   /// Send a chat message in a specific match room
-  Future<void> sendMessage(String matchId, String senderId, String text) async {
-    DatabaseReference messagesRef = _db.ref('matches/$matchId/messages').push();
+  Future<void> sendChatMessage({
+    required String matchId,
+    required String senderId,
+    required String text,
+    String? imageUrl,
+    String? icebreakerTag,
+  }) async {
+    final messagesRef = _db.ref('matches/$matchId/messages').push();
+    final messageId =
+        messagesRef.key ?? 'msg_${DateTime.now().millisecondsSinceEpoch}';
 
     await messagesRef.set({
-      'id': messagesRef.key,
+      'id': messageId,
       'senderId': senderId,
       'text': text,
-      'type': 'text',
+      'type': imageUrl != null ? 'image' : 'text',
+      'imageUrl': ?imageUrl,
+      'icebreakerTag': ?icebreakerTag,
       'isRead': false,
       'timestamp': ServerValue.timestamp,
     });
 
-    // Update the last message preview on the match document
-    await _db.ref('matches/$matchId').update({
-      'lastMessage': text,
+    // Determine preview text
+    final previewText = text.isNotEmpty
+        ? text
+        : (imageUrl != null ? '[Image]' : 'Sent a message');
+
+    // Update match document
+    final matchSnap = await _db.ref('matches/$matchId').get();
+    String? peerUid;
+    if (matchSnap.exists && matchSnap.value is Map) {
+      final usersMap = (matchSnap.value as Map)['users'];
+      if (usersMap is Map) {
+        usersMap.forEach((uId, _) {
+          if (uId.toString() != senderId) peerUid = uId.toString();
+        });
+      }
+    }
+
+    final updates = <String, dynamic>{
+      'lastMessage': previewText,
       'lastMessageAt': ServerValue.timestamp,
-      // TODO: Increment unread count for the other user
+    };
+    if (peerUid != null) {
+      updates['unreadCounts/$peerUid'] = ServerValue.increment(1);
+    }
+    await _db.ref('matches/$matchId').update(updates);
+
+    // If peer is a campus sample profile (e.g. student_1, student_2, etc.),
+    // automatically trigger realistic auto-reply back into Firebase RTDB
+    if (peerUid != null && peerUid!.startsWith('student_')) {
+      _schedulePeerAutoReply(matchId, peerUid!, text);
+    }
+  }
+
+  /// Mark all messages in match as read for the current user
+  Future<void> markMatchAsRead(String matchId, String currentUserId) async {
+    try {
+      await _db.ref('matches/$matchId/unreadCounts/$currentUserId').set(0);
+
+      final messagesSnap = await _db.ref('matches/$matchId/messages').get();
+      if (messagesSnap.exists && messagesSnap.value is Map) {
+        final messagesMap = messagesSnap.value as Map;
+        final updates = <String, dynamic>{};
+        messagesMap.forEach((key, val) {
+          if (val is Map &&
+              val['senderId'] != currentUserId &&
+              val['isRead'] == false) {
+            updates['$key/isRead'] = true;
+          }
+        });
+        if (updates.isNotEmpty) {
+          await _db.ref('matches/$matchId/messages').update(updates);
+        }
+      }
+    } catch (_) {}
+  }
+
+  /// Seed an initial sample match in Firebase Realtime Database if user has no matches yet
+  Future<void> seedInitialMatchIfEmpty(String currentUserId) async {
+    if (currentUserId.isEmpty) return;
+
+    try {
+      final matchesSnap = await _db.ref('matches').get();
+      bool hasExistingMatch = false;
+
+      if (matchesSnap.exists && matchesSnap.value is Map) {
+        final map = matchesSnap.value as Map;
+        for (final val in map.values) {
+          if (val is Map && val['users'] is Map) {
+            if ((val['users'] as Map).containsKey(currentUserId)) {
+              hasExistingMatch = true;
+              break;
+            }
+          }
+        }
+      }
+
+      if (!hasExistingMatch) {
+        const targetPeerId = 'student_1'; // Pimchanok
+        final users = [currentUserId, targetPeerId]..sort();
+        final matchId = '${users[0]}_${users[1]}';
+
+        final matchRef = _db.ref('matches/$matchId');
+        await matchRef.set({
+          'matchId': matchId,
+          'users': {users[0]: true, users[1]: true},
+          'matchedAt': ServerValue.timestamp,
+          'lastMessage':
+              'Hey Art! Wanna grab iced matcha at the library cafe? ☕',
+          'lastMessageAt': ServerValue.timestamp,
+          'unreadCounts': {currentUserId: 1, targetPeerId: 0},
+        });
+
+        // Seed 2 initial messages in the room
+        final msg1 = matchRef.child('messages').push();
+        await msg1.set({
+          'id': msg1.key,
+          'senderId': targetPeerId,
+          'text':
+              'Hi! I saw you are into Bauhaus design and specialty coffee too!',
+          'type': 'text',
+          'isRead': true,
+          'timestamp': ServerValue.timestamp,
+        });
+
+        final msg2 = matchRef.child('messages').push();
+        await msg2.set({
+          'id': msg2.key,
+          'senderId': targetPeerId,
+          'text':
+              'Wanna grab iced matcha at the library cafe after studio today? ☕',
+          'type': 'text',
+          'isRead': false,
+          'timestamp': ServerValue.timestamp,
+        });
+      }
+    } catch (e) {
+      debugPrint('Error seeding initial match: $e');
+    }
+  }
+
+  /// Realistic auto-reply for campus sample profiles
+  void _schedulePeerAutoReply(
+    String matchId,
+    String peerId,
+    String userMessage,
+  ) {
+    Timer(const Duration(milliseconds: 2000), () async {
+      try {
+        final matchSnap = await _db.ref('matches/$matchId').get();
+        if (!matchSnap.exists) return;
+
+        final responses = [
+          "That sounds awesome! Let's definitely meet up around campus ☕",
+          "Haha totally agree! Love your style and taste in music 🎶",
+          "I'm usually studying at the library on weekdays, let me know if you are free!",
+          "That's so cool! Not many students know about that spot on campus!",
+          "Great! Looking forward to catching up with you soon 🙌",
+        ];
+        responses.shuffle();
+        final replyText = responses.first;
+
+        final replyRef = _db.ref('matches/$matchId/messages').push();
+        await replyRef.set({
+          'id': replyRef.key,
+          'senderId': peerId,
+          'text': replyText,
+          'type': 'text',
+          'isRead': false,
+          'timestamp': ServerValue.timestamp,
+        });
+
+        await _db.ref('matches/$matchId').update({
+          'lastMessage': replyText,
+          'lastMessageAt': ServerValue.timestamp,
+        });
+      } catch (e) {
+        debugPrint('Auto reply error: $e');
+      }
     });
   }
 
-  /// Stream of messages for a chat room (Real-time listener)
+  /// Stream of messages for a specific chat room
   Stream<DatabaseEvent> getMessagesStream(String matchId) {
     return _db
         .ref('matches/$matchId/messages')

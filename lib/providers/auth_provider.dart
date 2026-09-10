@@ -9,7 +9,7 @@ class AuthProvider extends ChangeNotifier {
   final DatabaseService _db = DatabaseService();
 
   StudentProfile _currentUser = StudentProfile.currentUser;
-  bool _isProfileSetupComplete = true;
+  bool _isProfileSetupComplete = false;
 
   // Settings
   double _maxDistanceKm = 5.0;
@@ -36,6 +36,9 @@ class AuthProvider extends ChangeNotifier {
       final data = await _db.getUserProfile(uid);
       if (data != null) {
         _currentUser = StudentProfile.fromMap(data, id: uid);
+        _isProfileSetupComplete = _currentUser.photos.isNotEmpty;
+      } else {
+        _isProfileSetupComplete = false;
       }
     } catch (e) {
       debugPrint('Error fetching user profile: $e');
@@ -45,7 +48,8 @@ class AuthProvider extends ChangeNotifier {
   StudentProfile get currentUser => _currentUser;
   bool get isAuthenticated => _auth.currentUser != null;
   bool get isOnboarded => true;
-  bool get isProfileSetupComplete => _isProfileSetupComplete;
+  bool get isProfileSetupComplete =>
+      _isProfileSetupComplete && _currentUser.photos.isNotEmpty;
 
   double get maxDistanceKm => _maxDistanceKm;
   String get preferredFaculty => _preferredFaculty;
@@ -75,6 +79,8 @@ class AuthProvider extends ChangeNotifier {
         await _auth.signOut();
         throw 'Please check your inbox and click the verification link before logging in.';
       }
+
+      await _fetchUserProfile(cred.user!.uid);
     } on FirebaseAuthException catch (e) {
       throw e.message ?? 'Login failed';
     }

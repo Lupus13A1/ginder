@@ -125,129 +125,143 @@ class _MatchesScreenState extends State<MatchesScreen> {
               ),
             ),
 
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16.0,
-                  vertical: 8.0,
+            if (chatProvider.isLoading)
+              const Expanded(
+                child: Center(
+                  child: CircularProgressIndicator(
+                    color: BauhausColors.primaryRed,
+                    strokeWidth: 3.0,
+                  ),
                 ),
-                children: [
-                  // New Matches Horizontal Section
-                  Row(
-                    children: [
-                      Container(
-                        width: 8,
-                        height: 8,
-                        color: BauhausColors.primaryRed,
-                        margin: const EdgeInsets.only(right: 6),
-                      ),
-                      Text(
-                        'NEW MATCHES (${allConversations.length})',
-                        style: BauhausTextStyles.badge().copyWith(
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                    ],
+              )
+            else if (allConversations.isEmpty)
+              Expanded(child: _buildEmptyState())
+            else
+              Expanded(
+                child: ListView(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16.0,
+                    vertical: 8.0,
                   ),
-                  const SizedBox(height: 10),
-                  SizedBox(
-                    height: 100,
-                    child: ListView.separated(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: allConversations.length,
-                      separatorBuilder: (context, index) =>
-                          const SizedBox(width: 14),
-                      itemBuilder: (context, index) {
-                        final conv = allConversations[index];
-                        final peer = conv.peer;
-                        return GestureDetector(
-                          onTap: () {
-                            Navigator.of(context).pushNamed(AppRoutes.chat, arguments: conv.id);
-                          },
-                          child: Column(
-                            children: [
-                              BauhausAvatar(
-                                imageUrl: peer.photos.isNotEmpty
-                                    ? peer.photos.first
-                                    : null,
-                                initial: peer.nickname[0],
-                                size: 58,
-                                isCircle: true,
-                                backgroundColor: index % 2 == 0
-                                    ? BauhausColors.primaryBlue
-                                    : BauhausColors.primaryYellow,
-                                borderWidth: 2.5,
-                                shadowOffset: 3.0,
-                                showVerifiedBadge: peer.isVerifiedStudent,
-                              ),
-                              const SizedBox(height: 6),
-                              Text(
-                                peer.nickname.toUpperCase(),
-                                style: BauhausTextStyles.badge().copyWith(
-                                  fontSize: 10,
+                  children: [
+                    // New Matches Horizontal Section
+                    Row(
+                      children: [
+                        Container(
+                          width: 8,
+                          height: 8,
+                          color: BauhausColors.primaryRed,
+                          margin: const EdgeInsets.only(right: 6),
+                        ),
+                        Text(
+                          'NEW MATCHES (${allConversations.length})',
+                          style: BauhausTextStyles.badge().copyWith(
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    SizedBox(
+                      height: 100,
+                      child: ListView.separated(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: allConversations.length,
+                        separatorBuilder: (context, index) =>
+                            const SizedBox(width: 14),
+                        itemBuilder: (context, index) {
+                          final conv = allConversations[index];
+                          final peer = conv.peer;
+                          return GestureDetector(
+                            onTap: () {
+                              Navigator.of(
+                                context,
+                              ).pushNamed(AppRoutes.chat, arguments: conv.id);
+                            },
+                            child: Column(
+                              children: [
+                                BauhausAvatar(
+                                  imageUrl: peer.photos.isNotEmpty
+                                      ? peer.photos.first
+                                      : null,
+                                  initial: peer.nickname[0],
+                                  size: 58,
+                                  isCircle: true,
+                                  backgroundColor: index % 2 == 0
+                                      ? BauhausColors.primaryBlue
+                                      : BauhausColors.primaryYellow,
+                                  borderWidth: 2.5,
+                                  shadowOffset: 3.0,
+                                  showVerifiedBadge: peer.isVerifiedStudent,
                                 ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ],
-                          ),
-                        );
-                      },
+                                const SizedBox(height: 6),
+                                Text(
+                                  peer.nickname.toUpperCase(),
+                                  style: BauhausTextStyles.badge().copyWith(
+                                    fontSize: 10,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
                     ),
-                  ),
 
-                  const Divider(
-                    thickness: 2.0,
-                    color: BauhausColors.border,
-                    height: 24,
-                  ),
+                    const Divider(
+                      thickness: 2.0,
+                      color: BauhausColors.border,
+                      height: 24,
+                    ),
 
-                  // Active Conversations Header
-                  Row(
-                    children: [
+                    // Active Conversations Header
+                    Row(
+                      children: [
+                        Container(
+                          width: 8,
+                          height: 8,
+                          color: BauhausColors.primaryBlue,
+                          margin: const EdgeInsets.only(right: 6),
+                        ),
+                        Text(
+                          'CONVERSATIONS',
+                          style: BauhausTextStyles.badge().copyWith(
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+
+                    // Conversations list
+                    if (filteredConversations.isEmpty)
                       Container(
-                        width: 8,
-                        height: 8,
-                        color: BauhausColors.primaryBlue,
-                        margin: const EdgeInsets.only(right: 6),
-                      ),
-                      Text(
-                        'CONVERSATIONS',
-                        style: BauhausTextStyles.badge().copyWith(
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-
-                  // Conversations list
-                  if (filteredConversations.isEmpty)
-                    Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: BauhausColors.surface,
-                        border: Border.all(
-                          color: BauhausColors.border,
-                          width: 2.0,
-                        ),
-                      ),
-                      child: Center(
-                        child: Text(
-                          'No campus conversations found',
-                          style: BauhausTextStyles.bodyMedium(
-                            color: Colors.grey.shade600,
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: BauhausColors.surface,
+                          border: Border.all(
+                            color: BauhausColors.border,
+                            width: 2.0,
                           ),
                         ),
+                        child: Center(
+                          child: Text(
+                            'No campus conversations found',
+                            style: BauhausTextStyles.bodyMedium(
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                        ),
+                      )
+                    else
+                      ...filteredConversations.map(
+                        (conv) => _buildConversationTile(conv),
                       ),
-                    )
-                  else
-                    ...filteredConversations.map(
-                      (conv) => _buildConversationTile(conv),
-                    ),
-                ],
+                  ],
+                ),
               ),
-            ),
           ],
         ),
       ),
@@ -353,6 +367,46 @@ class _MatchesScreenState extends State<MatchesScreen> {
           onTap: () {
             Navigator.of(context).pushNamed(AppRoutes.chat, arguments: conv.id);
           },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 32.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(22),
+              decoration: BoxDecoration(
+                color: BauhausColors.cardYellow,
+                border: Border.all(color: BauhausColors.border, width: 3.0),
+                boxShadow: const [
+                  BoxShadow(
+                    color: BauhausColors.border,
+                    offset: Offset(4, 4),
+                    blurRadius: 0,
+                  ),
+                ],
+              ),
+              child: const Icon(
+                Icons.favorite_border,
+                size: 48,
+                color: BauhausColors.primaryRed,
+              ),
+            ),
+            const SizedBox(height: 18),
+            Text('NO MATCHES YET', style: BauhausTextStyles.headlineMedium()),
+            const SizedBox(height: 8),
+            Text(
+              'Swipe right on students in Campus Discover to make mutual matches and start chatting!',
+              textAlign: TextAlign.center,
+              style: BauhausTextStyles.bodyMedium(color: Colors.grey.shade700),
+            ),
+          ],
         ),
       ),
     );

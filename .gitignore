@@ -53,6 +53,7 @@ firebase.json
 # Environment variables & Secret Keys
 .env
 .env.*
+!.env.example
 *.jks
 *.keystore
 key.properties

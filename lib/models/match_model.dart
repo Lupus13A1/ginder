@@ -39,6 +39,61 @@ class MatchConversation {
     );
   }
 
+  factory MatchConversation.fromFirebaseMap({
+    required String matchId,
+    required Map<dynamic, dynamic> map,
+    required StudentProfile peer,
+    required String currentUserId,
+  }) {
+    final rawMatchedAt = map['matchedAt'];
+    DateTime matchedAt;
+    if (rawMatchedAt is int) {
+      matchedAt = DateTime.fromMillisecondsSinceEpoch(rawMatchedAt);
+    } else {
+      matchedAt = DateTime.now();
+    }
+
+    // Parse messages
+    final List<ChatMessage> messages = [];
+    if (map['messages'] is Map) {
+      final messagesMap = map['messages'] as Map;
+      messagesMap.forEach((key, val) {
+        if (val is Map) {
+          messages.add(
+            ChatMessage.fromMap(
+              val,
+              currentUserId: currentUserId,
+              id: key.toString(),
+            ),
+          );
+        }
+      });
+      // Sort messages by timestamp ascending
+      messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+    }
+
+    // Unread count for current user
+    int unreadCount = 0;
+    if (map['unreadCounts'] is Map) {
+      final unreadMap = map['unreadCounts'] as Map;
+      final val = unreadMap[currentUserId];
+      if (val is int) {
+        unreadCount = val;
+      }
+    } else {
+      unreadCount = messages.where((m) => !m.isFromMe && !m.isRead).length;
+    }
+
+    return MatchConversation(
+      id: matchId,
+      peer: peer,
+      matchedAt: matchedAt,
+      messages: messages,
+      unreadCount: unreadCount,
+      isOnline: true,
+    );
+  }
+
   /// Initial sample matches and conversations
   static List<MatchConversation> get sampleMatches {
     final profiles = StudentProfile.sampleProfiles;

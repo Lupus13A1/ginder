@@ -49,30 +49,30 @@ class _MatchScreenState extends State<MatchScreen>
     super.dispose();
   }
 
-  void _sendAndGoToChat() {
+  void _sendAndGoToChat() async {
     final chat = context.read<ChatProvider>();
-    chat.addMatchFromDiscover(widget.peer);
+    final myUid = context.read<AuthProvider>().currentUser.id;
+    final users = [myUid, widget.peer.id]..sort();
+    final matchId = '${users[0]}_${users[1]}';
 
-    final conv = chat.getConversationByPeerId(widget.peer.id);
-    if (conv != null && _msgController.text.trim().isNotEmpty) {
-      chat.sendMessage(
-        conversationId: conv.id,
-        text: _msgController.text.trim(),
-      );
-      chat.setActiveConversation(conv.id);
+    await chat.addMatchFromDiscover(widget.peer);
+
+    final text = _msgController.text.trim();
+    if (text.isNotEmpty) {
+      await chat.sendMessage(conversationId: matchId, text: text);
+      chat.setActiveConversation(matchId);
     }
 
+    if (!mounted) return;
     context.read<DiscoverProvider>().clearMatchCelebration();
     Navigator.of(context).pop();
-
-    if (conv != null) {
-      Navigator.of(context).pushNamed(AppRoutes.chat, arguments: conv.id);
-    }
+    Navigator.of(context).pushNamed(AppRoutes.chat, arguments: matchId);
   }
 
-  void _keepSwiping() {
+  void _keepSwiping() async {
     final chat = context.read<ChatProvider>();
-    chat.addMatchFromDiscover(widget.peer);
+    await chat.addMatchFromDiscover(widget.peer);
+    if (!mounted) return;
     context.read<DiscoverProvider>().clearMatchCelebration();
     Navigator.of(context).pop();
   }

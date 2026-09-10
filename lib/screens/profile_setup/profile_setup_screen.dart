@@ -8,6 +8,7 @@ import '../../widgets/bauhaus_card.dart';
 import '../../widgets/bauhaus_text_field.dart';
 import '../../widgets/bauhaus_badge.dart';
 import '../../providers/auth_provider.dart';
+import '../../services/google_drive_service.dart';
 import '../main_nav_shell.dart';
 
 class ProfileSetupScreen extends StatefulWidget {
@@ -59,10 +60,71 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
     'Specialty Coffee',
   };
 
-  final List<String> _photos = [
-    'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=700&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=700&auto=format&fit=crop&q=80',
-  ];
+  late List<String> _photos;
+
+  @override
+  void initState() {
+    super.initState();
+    final user = context.read<AuthProvider>().currentUser;
+    _photos = List.from(user.photos);
+  }
+
+  bool _isUploadingPhoto = false;
+  int? _uploadingSlotIndex;
+
+  Future<void> _handlePhotoUpload(int index) async {
+    if (_isUploadingPhoto) return;
+
+    final source = await GoogleDriveService.showImageSourceDialog(context);
+    if (source == null) return;
+
+    final picked = await GoogleDriveService.pickImage(source);
+    if (picked == null) return;
+
+    setState(() {
+      _isUploadingPhoto = true;
+      _uploadingSlotIndex = index;
+    });
+
+    final result = await GoogleDriveService.uploadImage(picked);
+
+    if (!mounted) return;
+
+    setState(() {
+      _isUploadingPhoto = false;
+      _uploadingSlotIndex = null;
+    });
+
+    if (result.isSuccess && result.url != null) {
+      setState(() {
+        if (index < _photos.length) {
+          _photos[index] = result.url!;
+        } else {
+          _photos.add(result.url!);
+        }
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('PHOTO SAVED SUCCESSFULLY!'),
+          backgroundColor: BauhausColors.primaryRed,
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(result.errorMessage ?? 'Upload failed'),
+          backgroundColor: BauhausColors.foreground,
+          duration: const Duration(seconds: 4),
+        ),
+      );
+    }
+  }
+
+  void _removePhoto(int index) {
+    setState(() {
+      _photos.removeAt(index);
+    });
+  }
 
   @override
   void dispose() {
@@ -85,6 +147,19 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
   }
 
   void _saveProfile() {
+    if (_photos.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            '⚠️ กรุณาอัปโหลดรูปภาพโปรไฟล์อย่างน้อย 1 รูปก่อนเริ่มใช้งาน (PLEASE UPLOAD AT LEAST 1 PHOTO)',
+          ),
+          backgroundColor: BauhausColors.primaryRed,
+          duration: Duration(seconds: 4),
+        ),
+      );
+      return;
+    }
+
     context.read<AuthProvider>().completeProfileSetup(
       bio: _bioController.text,
       interests: _selectedInterests.toList(),
@@ -160,15 +235,51 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          'CAMPUS PHOTOS (2/4)',
+                          'CAMPUS PHOTOS (${_photos.length}/4)',
                           style: BauhausTextStyles.title(),
                         ),
-                        const BauhausBadge(
-                          label: 'MAIN PHOTO',
-                          variant: BauhausBadgeVariant.red,
+                        BauhausBadge(
+                          label: _photos.isEmpty ? 'REQUIRED 1+' : 'MAIN PHOTO',
+                          variant: _photos.isEmpty
+                              ? BauhausBadgeVariant.yellow
+                              : BauhausBadgeVariant.red,
                         ),
                       ],
                     ),
+                    if (_photos.isEmpty) ...[
+                      const SizedBox(height: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: BauhausColors.primaryRed.withAlpha(25),
+                          border: Border.all(
+                            color: BauhausColors.primaryRed,
+                            width: 1.5,
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.error_outline,
+                              color: BauhausColors.primaryRed,
+                              size: 16,
+                            ),
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Text(
+                                'บังคับ: กรุณาอัปโหลดรูปภาพอย่างน้อย 1 รูป (UPLOAD AT LEAST 1 PHOTO)',
+                                style: BauhausTextStyles.badge(
+                                  color: BauhausColors.primaryRed,
+                                ).copyWith(fontSize: 9),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                     const SizedBox(height: 12),
                     GridView.count(
                       crossAxisCount: 2,
@@ -177,12 +288,12 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                       crossAxisSpacing: 10,
                       mainAxisSpacing: 10,
                       childAspectRatio: 0.9,
-                      children: [
-                        _buildPhotoSlot(0),
-                        _buildPhotoSlot(1),
-                        _buildEmptySlot(2),
-                        _buildEmptySlot(3),
-                      ],
+                      children: List.generate(
+                        4,
+                        (index) => index < _photos.length
+                            ? _buildPhotoSlot(index)
+                            : _buildEmptySlot(index),
+                      ),
                     ),
                   ],
                 ),
@@ -349,6 +460,8 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
   }
 
   Widget _buildPhotoSlot(int index) {
+    final isUploadingThis = _isUploadingPhoto && _uploadingSlotIndex == index;
+
     return Container(
       decoration: BoxDecoration(
         color: BauhausColors.surface,
@@ -370,13 +483,71 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
             errorBuilder: (context, error, stackTrace) =>
                 const Center(child: Icon(Icons.person, size: 40)),
           ),
+          if (isUploadingThis)
+            Container(
+              color: Colors.black54,
+              child: const Center(
+                child: CircularProgressIndicator(
+                  color: BauhausColors.primaryYellow,
+                  strokeWidth: 3,
+                ),
+              ),
+            ),
+          // Delete button on top right
+          Positioned(
+            top: 6,
+            right: 6,
+            child: GestureDetector(
+              onTap: () => _removePhoto(index),
+              child: Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: BauhausColors.primaryRed,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: BauhausColors.border, width: 1.5),
+                ),
+                child: const Icon(Icons.close, color: Colors.white, size: 12),
+              ),
+            ),
+          ),
+          // Change photo button on bottom left
+          Positioned(
+            bottom: 6,
+            left: 6,
+            child: GestureDetector(
+              onTap: () => _handlePhotoUpload(index),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                decoration: BoxDecoration(
+                  color: BauhausColors.surface,
+                  border: Border.all(color: BauhausColors.border, width: 1.5),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.sync,
+                      size: 11,
+                      color: BauhausColors.foreground,
+                    ),
+                    const SizedBox(width: 3),
+                    Text(
+                      'CHANGE',
+                      style: BauhausTextStyles.badge().copyWith(fontSize: 8),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          // Checkmark badge on bottom right
           Positioned(
             bottom: 6,
             right: 6,
             child: Container(
               padding: const EdgeInsets.all(4),
               decoration: BoxDecoration(
-                color: BauhausColors.primaryRed,
+                color: BauhausColors.primaryBlue,
                 shape: BoxShape.circle,
                 border: Border.all(color: BauhausColors.border, width: 1.5),
               ),
@@ -389,39 +560,60 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
   }
 
   Widget _buildEmptySlot(int index) {
-    return Container(
-      decoration: BoxDecoration(
-        color: BauhausColors.cardYellow.withAlpha(80),
-        border: Border.all(
-          color: BauhausColors.border,
-          width: 2.0,
-          style: BorderStyle.solid,
+    final isUploadingThis = _isUploadingPhoto && _uploadingSlotIndex == index;
+
+    return GestureDetector(
+      onTap: () => _handlePhotoUpload(index),
+      child: Container(
+        decoration: BoxDecoration(
+          color: BauhausColors.cardYellow.withAlpha(80),
+          border: Border.all(
+            color: BauhausColors.border,
+            width: 2.0,
+            style: BorderStyle.solid,
+          ),
         ),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: BauhausColors.surface,
-              shape: BoxShape.circle,
-              border: Border.all(color: BauhausColors.border, width: 1.5),
-            ),
-            child: const Icon(
-              Icons.add,
-              color: BauhausColors.foreground,
-              size: 20,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            'ADD PHOTO',
-            style: BauhausTextStyles.badge(
-              color: Colors.grey.shade700,
-            ).copyWith(fontSize: 9),
-          ),
-        ],
+        child: isUploadingThis
+            ? const Center(
+                child: CircularProgressIndicator(
+                  color: BauhausColors.primaryRed,
+                  strokeWidth: 3,
+                ),
+              )
+            : Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: BauhausColors.surface,
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: BauhausColors.border,
+                        width: 1.5,
+                      ),
+                    ),
+                    child: const Icon(
+                      Icons.add_a_photo,
+                      color: BauhausColors.foreground,
+                      size: 20,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'ADD PHOTO',
+                    style: BauhausTextStyles.badge(
+                      color: Colors.grey.shade700,
+                    ).copyWith(fontSize: 9),
+                  ),
+                  Text(
+                    'TO DRIVE',
+                    style: BauhausTextStyles.badge(
+                      color: BauhausColors.primaryBlue,
+                    ).copyWith(fontSize: 7),
+                  ),
+                ],
+              ),
       ),
     );
   }

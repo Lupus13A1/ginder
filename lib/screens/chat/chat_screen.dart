@@ -9,6 +9,7 @@ import '../../widgets/bauhaus_button.dart';
 import '../../widgets/bauhaus_bottom_sheet.dart';
 import '../../models/chat_message.dart';
 import '../../providers/chat_provider.dart';
+import '../../services/image_upload_service.dart';
 import '../safety/report_dialog.dart';
 
 class ChatScreen extends StatefulWidget {
@@ -73,20 +74,57 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
-  void _sendMessage({String? customText, String? icebreaker}) {
+  bool _isUploadingImage = false;
+  int _lastMessageCount = 0;
+
+  void _sendMessage({String? customText, String? icebreaker}) async {
     final text = customText ?? _textController.text.trim();
     if (text.isEmpty) return;
 
     HapticFeedback.lightImpact();
-    context.read<ChatProvider>().sendMessage(
+    _textController.clear();
+    setState(() => _showEmojiTray = false);
+
+    await context.read<ChatProvider>().sendMessage(
       conversationId: widget.conversationId,
       text: text,
       icebreakerTag: icebreaker,
     );
 
-    _textController.clear();
-    setState(() => _showEmojiTray = false);
     Future.delayed(const Duration(milliseconds: 100), _scrollToBottom);
+  }
+
+  Future<void> _sendImageMessage() async {
+    if (_isUploadingImage) return;
+
+    final source = await ImageUploadService.showImageSourceDialog(context);
+    if (source == null) return;
+
+    final picked = await ImageUploadService.pickImage(source);
+    if (picked == null) return;
+
+    setState(() => _isUploadingImage = true);
+
+    final result = await ImageUploadService.uploadImage(picked);
+
+    if (!mounted) return;
+    setState(() => _isUploadingImage = false);
+
+    if (result.isSuccess && result.url != null) {
+      await context.read<ChatProvider>().sendMessage(
+        conversationId: widget.conversationId,
+        text: '',
+        imageUrl: result.url!,
+      );
+      Future.delayed(const Duration(milliseconds: 100), _scrollToBottom);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(result.errorMessage ?? 'Failed to upload photo'),
+          backgroundColor: BauhausColors.primaryRed,
+        ),
+      );
+    }
   }
 
   void _openPeerProfile() {
@@ -173,9 +211,33 @@ class _ChatScreenState extends State<ChatScreen> {
 
     if (conv == null) {
       return Scaffold(
-        appBar: AppBar(title: const Text('CHAT')),
-        body: const Center(child: Text('Conversation not found')),
+        backgroundColor: BauhausColors.background,
+        appBar: AppBar(
+          backgroundColor: BauhausColors.surface,
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back, color: BauhausColors.foreground),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+          title: Text('CAMPUS CHAT', style: BauhausTextStyles.headlineMedium()),
+        ),
+        body: Center(
+          child: chatProvider.isLoading
+              ? const CircularProgressIndicator(
+                  color: BauhausColors.primaryRed,
+                  strokeWidth: 3.0,
+                )
+              : Text(
+                  'Conversation not found',
+                  style: BauhausTextStyles.bodyMedium(),
+                ),
+        ),
       );
+    }
+
+    if (conv.messages.length != _lastMessageCount) {
+      _lastMessageCount = conv.messages.length;
+      WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
     }
 
     final peer = conv.peer;
@@ -386,6 +448,24 @@ class _ChatScreenState extends State<ChatScreen> {
                     onPressed: () =>
                         setState(() => _showEmojiTray = !_showEmojiTray),
                   ),
+                  // Image attachment button
+                  IconButton(
+                    icon: _isUploadingImage
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: BauhausColors.primaryRed,
+                            ),
+                          )
+                        : const Icon(
+                            Icons.add_photo_alternate_outlined,
+                            color: BauhausColors.foreground,
+                          ),
+                    tooltip: 'Send Photo',
+                    onPressed: _isUploadingImage ? null : _sendImageMessage,
+                  ),
                   // Text input
                   Expanded(
                     child: TextField(
@@ -441,6 +521,7 @@ class _ChatScreenState extends State<ChatScreen> {
                           BoxShadow(
                             color: BauhausColors.border,
                             offset: Offset(2, 2),
+                            blurRadius: 0,
                           ),
                         ],
                       ),
@@ -490,12 +571,37 @@ class _ChatScreenState extends State<ChatScreen> {
               ? CrossAxisAlignment.end
               : CrossAxisAlignment.start,
           children: [
-            Text(
-              msg.text,
-              style: BauhausTextStyles.bodyMedium(
-                color: isMe ? Colors.white : BauhausColors.foreground,
+            if (msg.imageUrl != null && msg.imageUrl!.isNotEmpty) ...[
+              Container(
+                margin: const EdgeInsets.only(bottom: 6),
+                decoration: BoxDecoration(
+                  border: Border.all(color: BauhausColors.border, width: 2),
+                ),
+                child: Image.network(
+                  msg.imageUrl!,
+                  fit: BoxFit.cover,
+                  errorBuilder: (ctx, err, stack) => Container(
+                    padding: const EdgeInsets.all(12),
+                    color: Colors.grey.shade200,
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.broken_image, size: 24, color: Colors.grey),
+                        SizedBox(width: 6),
+                        Text('Image failed to load'),
+                      ],
+                    ),
+                  ),
+                ),
               ),
-            ),
+            ],
+            if (msg.text.isNotEmpty)
+              Text(
+                msg.text,
+                style: BauhausTextStyles.bodyMedium(
+                  color: isMe ? Colors.white : BauhausColors.foreground,
+                ),
+              ),
             const SizedBox(height: 4),
             Row(
               mainAxisSize: MainAxisSize.min,

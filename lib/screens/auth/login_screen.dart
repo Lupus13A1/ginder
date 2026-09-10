@@ -46,7 +46,12 @@ class _LoginScreenState extends State<LoginScreen> {
         password: _passwordController.text,
       );
       if (mounted) {
-        Navigator.of(context).pushReplacementNamed(AppRoutes.home);
+        final auth = context.read<AuthProvider>();
+        if (!auth.isProfileSetupComplete) {
+          Navigator.of(context).pushReplacementNamed(AppRoutes.profileSetup);
+        } else {
+          Navigator.of(context).pushReplacementNamed(AppRoutes.home);
+        }
       }
     } catch (e) {
       if (mounted) {
