@@ -35,20 +35,7 @@ class AuthProvider extends ChangeNotifier {
     try {
       final data = await _db.getUserProfile(uid);
       if (data != null) {
-        _currentUser = StudentProfile(
-          id: data['uid'] ?? uid,
-          name: data['name'] ?? 'Student',
-          nickname: data['nickname'] ?? 'Student',
-          age: data['age'] ?? 20,
-          faculty: data['faculty'] ?? '',
-          major: data['major'] ?? '',
-          year: data['year'] ?? '',
-          bio: data['bio'] ?? '',
-          photos: List<String>.from(data['photos'] ?? []),
-          interests: List<String>.from(data['interests'] ?? []),
-          studentEmail: data['email'] ?? '',
-          isVerifiedStudent: data['isVerifiedStudent'] ?? false,
-        );
+        _currentUser = StudentProfile.fromMap(data, id: uid);
       }
     } catch (e) {
       debugPrint('Error fetching user profile: $e');
@@ -192,7 +179,7 @@ class AuthProvider extends ChangeNotifier {
     required String campusHangout,
     required List<String> photos,
   }) {
-    // Ideally this would save to Firestore as well
+    // Ideally this would save to Realtime Database as well
     _currentUser = _currentUser.copyWith(
       bio: bio,
       interests: interests,
@@ -204,11 +191,13 @@ class AuthProvider extends ChangeNotifier {
       profileCompleteness: 1.0,
     );
     _isProfileSetupComplete = true;
+    _db.saveFullUserProfile(_currentUser);
     notifyListeners();
   }
 
   void updateProfile(StudentProfile updated) {
     _currentUser = updated;
+    _db.saveFullUserProfile(updated);
     notifyListeners();
   }
 

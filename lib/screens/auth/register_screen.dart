@@ -19,14 +19,12 @@ class RegisterScreen extends StatefulWidget {
 }
 
 class _RegisterScreenState extends State<RegisterScreen> {
-  final _nameController = TextEditingController(text: 'Thanathip A.');
-  final _nicknameController = TextEditingController(text: 'Art');
-  final _ageController = TextEditingController(text: '21');
-  final _majorController = TextEditingController(text: 'Urban Planning');
-  final _emailController = TextEditingController(
-    text: 'art.thana@email.kmutnb.ac.th',
-  );
-  final _passwordController = TextEditingController(text: 'password123');
+  final _nameController = TextEditingController();
+  final _nicknameController = TextEditingController();
+  final _ageController = TextEditingController();
+  final _majorController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
 
   String _selectedFaculty = 'Architecture & Design';
   String _selectedYear = 'Year 3 (Junior)';
@@ -206,7 +204,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           flex: 2,
                           child: BauhausTextField(
                             label: 'FULL NAME',
-                            hintText: 'Thanathip A.',
+                            hintText: 'e.g. Somchai Prasert',
                             controller: _nameController,
                           ),
                         ),
@@ -215,7 +213,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           flex: 1,
                           child: BauhausTextField(
                             label: 'NICKNAME',
-                            hintText: 'Art',
+                            hintText: 'e.g. Art',
                             controller: _nicknameController,
                           ),
                         ),
@@ -228,7 +226,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           flex: 1,
                           child: BauhausTextField(
                             label: 'AGE',
-                            hintText: '21',
+                            hintText: 'e.g. 20',
                             controller: _ageController,
                             keyboardType: TextInputType.number,
                           ),
@@ -238,7 +236,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           flex: 2,
                           child: BauhausTextField(
                             label: 'MAJOR / FIELD',
-                            hintText: 'Urban Planning',
+                            hintText: 'e.g. Computer Engineering',
                             controller: _majorController,
                           ),
                         ),
@@ -284,8 +282,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             return DropdownMenuItem(value: f, child: Text(f));
                           }).toList(),
                           onChanged: (val) {
-                            if (val != null)
+                            if (val != null) {
                               setState(() => _selectedFaculty = val);
+                            }
                           },
                         ),
                       ),
@@ -331,8 +330,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             return DropdownMenuItem(value: y, child: Text(y));
                           }).toList(),
                           onChanged: (val) {
-                            if (val != null)
+                            if (val != null) {
                               setState(() => _selectedYear = val);
+                            }
                           },
                         ),
                       ),
@@ -341,7 +341,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     const SizedBox(height: 14),
                     BauhausTextField(
                       label: 'UNIVERSITY EMAIL',
-                      hintText: 'art.thana@email.kmutnb.ac.th',
+                      hintText: 'student.name@email.kmutnb.ac.th',
                       controller: _emailController,
                       keyboardType: TextInputType.emailAddress,
                       prefixIcon: const Icon(
@@ -353,7 +353,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     const SizedBox(height: 14),
                     BauhausTextField(
                       label: 'PASSWORD',
-                      hintText: 'Create a secure password',
+                      hintText: 'Create a password (min. 6 characters)',
                       controller: _passwordController,
                       obscureText: true,
                       prefixIcon: const Icon(

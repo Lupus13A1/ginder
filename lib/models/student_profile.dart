@@ -95,6 +95,82 @@ class StudentProfile {
     );
   }
 
+  factory StudentProfile.fromMap(Map<String, dynamic> map, {String? id}) {
+    List<String> parseList(dynamic val) {
+      if (val is List) {
+        return val.map((e) => e.toString()).toList();
+      }
+      return [];
+    }
+
+    final uid = id ?? map['uid']?.toString() ?? map['id']?.toString() ?? '';
+    final name = map['name']?.toString() ?? 'Student';
+    final nickname = map['nickname']?.toString().isNotEmpty == true
+        ? map['nickname'].toString()
+        : name.split(' ').first;
+
+    return StudentProfile(
+      id: uid,
+      name: name,
+      nickname: nickname,
+      age: (map['age'] is num)
+          ? (map['age'] as num).toInt()
+          : int.tryParse(map['age']?.toString() ?? '20') ?? 20,
+      faculty: map['faculty']?.toString() ?? '',
+      major: map['major']?.toString() ?? '',
+      year: map['year']?.toString() ?? '',
+      studentEmail:
+          map['email']?.toString() ?? map['studentEmail']?.toString() ?? '',
+      bio: map['bio']?.toString() ?? '',
+      photos: parseList(map['photos']),
+      interests: parseList(map['interests']),
+      commonInterests: parseList(map['commonInterests']),
+      anthemSong: map['anthemSong']?.toString() ?? '',
+      anthemArtist: map['anthemArtist']?.toString() ?? '',
+      favoriteMovie: map['favoriteMovie']?.toString() ?? '',
+      campusHangout: map['campusHangout']?.toString() ?? '',
+      distanceKm: (map['distanceKm'] is num)
+          ? (map['distanceKm'] as num).toDouble()
+          : double.tryParse(map['distanceKm']?.toString() ?? '0.8') ?? 0.8,
+      isVerifiedStudent: map['isVerifiedStudent'] == true,
+      matchesCount: (map['matchesCount'] is num)
+          ? (map['matchesCount'] as num).toInt()
+          : 0,
+      likesCount: (map['likesCount'] is num)
+          ? (map['likesCount'] as num).toInt()
+          : 0,
+      profileCompleteness: (map['profileCompleteness'] is num)
+          ? (map['profileCompleteness'] as num).toDouble()
+          : 0.85,
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'uid': id,
+      'name': name,
+      'nickname': nickname,
+      'age': age,
+      'faculty': faculty,
+      'major': major,
+      'year': year,
+      'email': studentEmail,
+      'bio': bio,
+      'photos': photos,
+      'interests': interests,
+      'commonInterests': commonInterests,
+      'anthemSong': anthemSong,
+      'anthemArtist': anthemArtist,
+      'favoriteMovie': favoriteMovie,
+      'campusHangout': campusHangout,
+      'distanceKm': distanceKm,
+      'isVerifiedStudent': isVerifiedStudent,
+      'matchesCount': matchesCount,
+      'likesCount': likesCount,
+      'profileCompleteness': profileCompleteness,
+    };
+  }
+
   /// Sample mock profiles across university faculties
   static List<StudentProfile> get sampleProfiles => [
     const StudentProfile(

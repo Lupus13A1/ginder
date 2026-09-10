@@ -17,6 +17,7 @@ class BauhausTextField extends StatefulWidget {
   final ValueChanged<String>? onChanged;
   final ValueChanged<String>? onSubmitted;
   final FormFieldValidator<String>? validator;
+  final FocusNode? focusNode;
   final bool readOnly;
   final VoidCallback? onTap;
   final Color fillColor;
@@ -27,6 +28,7 @@ class BauhausTextField extends StatefulWidget {
     this.hintText,
     this.controller,
     this.initialValue,
+    this.focusNode,
     this.obscureText = false,
     this.keyboardType = TextInputType.text,
     this.maxLines = 1,

@@ -302,8 +302,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                             )
                             .toList(),
                         onChanged: (val) {
-                          if (val != null)
+                          if (val != null) {
                             setState(() => _selectedFaculty = val);
+                          }
                         },
                       ),
                     ),
@@ -335,7 +336,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                             )
                             .toList(),
                         onChanged: (val) {
-                          if (val != null) setState(() => _selectedYear = val);
+                          if (val != null) {
+                            setState(() => _selectedYear = val);
+                          }
                         },
                       ),
                     ),

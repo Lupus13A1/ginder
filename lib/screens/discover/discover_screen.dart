@@ -10,6 +10,7 @@ import '../../widgets/bauhaus_button.dart';
 import '../../widgets/bauhaus_bottom_sheet.dart';
 import '../../models/student_profile.dart';
 import '../../providers/discover_provider.dart';
+import '../../providers/auth_provider.dart';
 import 'filter_bottom_sheet.dart';
 import '../../routes/app_routes.dart';
 
@@ -22,6 +23,15 @@ class DiscoverScreen extends StatefulWidget {
 
 class _DiscoverScreenState extends State<DiscoverScreen> {
   Offset _dragOffset = Offset.zero;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final myUid = context.read<AuthProvider>().currentUser.id;
+      context.read<DiscoverProvider>().loadProfiles(uid: myUid);
+    });
+  }
 
   void _onPanStart(DragStartDetails details) {}
 
@@ -48,40 +58,52 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
     });
   }
 
-  void _triggerLike() {
+  void _triggerLike() async {
     HapticFeedback.mediumImpact();
-    final isMatch = context.read<DiscoverProvider>().likeCurrent();
-    if (isMatch) {
+    final myUid = context.read<AuthProvider>().currentUser.id;
+    final isMatch = await context.read<DiscoverProvider>().likeCurrent(
+      uid: myUid,
+    );
+    if (isMatch && mounted) {
       final matchedProfile = context
           .read<DiscoverProvider>()
           .currentMatchProfile;
       if (matchedProfile != null) {
-        Navigator.of(context).pushNamed(AppRoutes.matchFound, arguments: matchedProfile);
+        Navigator.of(
+          context,
+        ).pushNamed(AppRoutes.matchFound, arguments: matchedProfile);
       }
     }
   }
 
-  void _triggerPass() {
+  void _triggerPass() async {
     HapticFeedback.lightImpact();
-    context.read<DiscoverProvider>().passCurrent();
+    final myUid = context.read<AuthProvider>().currentUser.id;
+    await context.read<DiscoverProvider>().passCurrent(uid: myUid);
   }
 
-  void _triggerSuperLike() {
+  void _triggerSuperLike() async {
     HapticFeedback.heavyImpact();
-    final isMatch = context.read<DiscoverProvider>().superLikeCurrent();
-    if (isMatch) {
+    final myUid = context.read<AuthProvider>().currentUser.id;
+    final isMatch = await context.read<DiscoverProvider>().superLikeCurrent(
+      uid: myUid,
+    );
+    if (isMatch && mounted) {
       final matchedProfile = context
           .read<DiscoverProvider>()
           .currentMatchProfile;
       if (matchedProfile != null) {
-        Navigator.of(context).pushNamed(AppRoutes.matchFound, arguments: matchedProfile);
+        Navigator.of(
+          context,
+        ).pushNamed(AppRoutes.matchFound, arguments: matchedProfile);
       }
     }
   }
 
-  void _triggerRewind() {
+  void _triggerRewind() async {
     HapticFeedback.selectionClick();
-    context.read<DiscoverProvider>().rewind();
+    final myUid = context.read<AuthProvider>().currentUser.id;
+    await context.read<DiscoverProvider>().rewind(uid: myUid);
   }
 
   void _openFilter() {
@@ -307,6 +329,38 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                       ),
                     ),
                   ),
+                  const SizedBox(width: 8),
+                  // Reload Button
+                  GestureDetector(
+                    onTap: () {
+                      final myUid = context.read<AuthProvider>().currentUser.id;
+                      context.read<DiscoverProvider>().loadProfiles(
+                        uid: myUid,
+                        forceRefresh: true,
+                      );
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: BauhausColors.surface,
+                        border: Border.all(
+                          color: BauhausColors.border,
+                          width: 2.0,
+                        ),
+                        boxShadow: const [
+                          BoxShadow(
+                            color: BauhausColors.border,
+                            offset: Offset(2, 2),
+                          ),
+                        ],
+                      ),
+                      child: const Icon(
+                        Icons.refresh,
+                        size: 16,
+                        color: BauhausColors.foreground,
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -315,7 +369,9 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-                child: currentCard != null
+                child: discover.isLoading
+                    ? _buildLoadingState()
+                    : currentCard != null
                     ? Stack(
                         clipBehavior: Clip.none,
                         alignment: Alignment.center,
@@ -692,6 +748,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
   }
 
   Widget _buildEmptyState() {
+    final myUid = context.read<AuthProvider>().currentUser.id;
     return Center(
       child: Container(
         padding: const EdgeInsets.all(24),
@@ -718,7 +775,50 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
             BauhausButton(
               text: 'RESET DECK & EXPAND',
               variant: BauhausButtonVariant.primaryRed,
-              onPressed: () => context.read<DiscoverProvider>().resetDeck(),
+              onPressed: () =>
+                  context.read<DiscoverProvider>().resetDeck(uid: myUid),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLoadingState() {
+    return Center(
+      child: Container(
+        padding: const EdgeInsets.all(32),
+        decoration: BoxDecoration(
+          color: BauhausColors.surface,
+          border: Border.all(color: BauhausColors.border, width: 3.5),
+          boxShadow: const [
+            BoxShadow(color: BauhausColors.border, offset: Offset(6, 6)),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(
+              width: 44,
+              height: 44,
+              child: CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  BauhausColors.primaryRed,
+                ),
+                strokeWidth: 3.5,
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              'SCANNING CAMPUS...',
+              style: BauhausTextStyles.headlineMedium().copyWith(
+                letterSpacing: 1.5,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Fetching real student profiles from database',
+              style: BauhausTextStyles.bodyMedium(color: Colors.grey.shade700),
             ),
           ],
         ),
