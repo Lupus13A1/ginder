@@ -19,16 +19,11 @@ class ProfileSetupScreen extends StatefulWidget {
 }
 
 class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
-  final _bioController = TextEditingController(
-    text:
-        'Obsessed with modernist grid layouts, Brutalism, espresso shots, and urban exploration. Looking for study partners and concert buddies.',
-  );
-  final _songController = TextEditingController(text: 'Blue Monday');
-  final _artistController = TextEditingController(text: 'New Order');
-  final _movieController = TextEditingController(text: 'Metropolis (1927)');
-  final _hangoutController = TextEditingController(
-    text: 'Central Library 4th Floor & Arch Workshop',
-  );
+  final _bioController = TextEditingController();
+  final _songController = TextEditingController();
+  final _artistController = TextEditingController();
+  final _movieController = TextEditingController();
+  final _hangoutController = TextEditingController();
 
   final List<String> _availableInterests = [
     'Architecture',
@@ -51,14 +46,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
     'Baking',
   ];
 
-  final Set<String> _selectedInterests = {
-    'Architecture',
-    'Indie Rock',
-    'Matcha Latte',
-    'Coding',
-    'Board Games',
-    'Specialty Coffee',
-  };
+  final Set<String> _selectedInterests = {};
 
   late List<String> _photos;
 

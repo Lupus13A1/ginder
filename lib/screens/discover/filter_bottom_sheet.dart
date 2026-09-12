@@ -17,7 +17,6 @@ class DiscoverFilterBottomSheet extends StatefulWidget {
 class _DiscoverFilterBottomSheetState extends State<DiscoverFilterBottomSheet> {
   late String _tempFaculty;
   late String _tempYear;
-  late double _tempDistance;
 
   final List<String> _faculties = [
     'All',
@@ -44,14 +43,12 @@ class _DiscoverFilterBottomSheetState extends State<DiscoverFilterBottomSheet> {
     final discover = context.read<DiscoverProvider>();
     _tempFaculty = discover.selectedFaculty;
     _tempYear = discover.selectedYear;
-    _tempDistance = discover.maxDistance;
   }
 
   void _applyFilters() {
     final discover = context.read<DiscoverProvider>();
     discover.setFacultyFilter(_tempFaculty);
     discover.setYearFilter(_tempYear);
-    discover.setMaxDistance(_tempDistance);
     Navigator.of(context).pop();
   }
 
@@ -134,58 +131,6 @@ class _DiscoverFilterBottomSheetState extends State<DiscoverFilterBottomSheet> {
               onTap: () => setState(() => _tempYear = y),
             );
           }).toList(),
-        ),
-
-        const SizedBox(height: 20),
-
-        // 3. Max Distance Slider
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Row(
-              children: [
-                Container(
-                  width: 8,
-                  height: 8,
-                  color: BauhausColors.primaryYellow,
-                  margin: const EdgeInsets.only(right: 6),
-                ),
-                Text(
-                  'MAXIMUM DISTANCE',
-                  style: BauhausTextStyles.badge().copyWith(
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-              ],
-            ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-              decoration: BoxDecoration(
-                color: BauhausColors.cardYellow,
-                border: Border.all(color: BauhausColors.border, width: 1.5),
-              ),
-              child: Text(
-                '${_tempDistance.toStringAsFixed(1)} KM',
-                style: BauhausTextStyles.badge(),
-              ),
-            ),
-          ],
-        ),
-        SliderTheme(
-          data: SliderTheme.of(context).copyWith(
-            activeTrackColor: BauhausColors.primaryYellow,
-            inactiveTrackColor: BauhausColors.muted,
-            thumbColor: BauhausColors.foreground,
-            trackHeight: 6,
-            thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 10),
-          ),
-          child: Slider(
-            value: _tempDistance,
-            min: 0.5,
-            max: 20.0,
-            divisions: 39,
-            onChanged: (val) => setState(() => _tempDistance = val),
-          ),
         ),
 
         const SizedBox(height: 24),

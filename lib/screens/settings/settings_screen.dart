@@ -23,10 +23,41 @@ class SettingsScreen extends StatelessWidget {
       primaryActionText: 'LOG OUT',
       onPrimaryAction: () {
         context.read<AuthProvider>().logout();
-        Navigator.of(context).pushNamedAndRemoveUntil(
-          AppRoutes.login,
-          (route) => false,
-        );
+        Navigator.of(
+          context,
+        ).pushNamedAndRemoveUntil(AppRoutes.login, (route) => false);
+      },
+      secondaryActionText: 'CANCEL',
+    );
+  }
+
+  void _confirmDeleteAccount(BuildContext context) {
+    BauhausDialog.show(
+      context: context,
+      title: 'DELETE ACCOUNT?',
+      content: const Text(
+        'This action is permanent and cannot be undone. All your matches and messages will be lost.',
+        style: TextStyle(fontSize: 13, height: 1.4),
+      ),
+      primaryActionText: 'DELETE',
+      onPrimaryAction: () async {
+        try {
+          await context.read<AuthProvider>().deleteAccount();
+          if (context.mounted) {
+            Navigator.of(
+              context,
+            ).pushNamedAndRemoveUntil(AppRoutes.login, (route) => false);
+          }
+        } catch (e) {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(e.toString()),
+                backgroundColor: BauhausColors.primaryRed,
+              ),
+            );
+          }
+        }
       },
       secondaryActionText: 'CANCEL',
     );
@@ -65,48 +96,6 @@ class SettingsScreen extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 14),
-
-                // Max Distance
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text('MAXIMUM DISTANCE', style: BauhausTextStyles.badge()),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 2,
-                      ),
-                      decoration: BoxDecoration(
-                        color: BauhausColors.cardYellow,
-                        border: Border.all(
-                          color: BauhausColors.border,
-                          width: 1.5,
-                        ),
-                      ),
-                      child: Text(
-                        '${auth.maxDistanceKm.toStringAsFixed(1)} KM',
-                        style: BauhausTextStyles.badge(),
-                      ),
-                    ),
-                  ],
-                ),
-                SliderTheme(
-                  data: SliderTheme.of(context).copyWith(
-                    activeTrackColor: BauhausColors.primaryRed,
-                    inactiveTrackColor: BauhausColors.muted,
-                    thumbColor: BauhausColors.foreground,
-                    trackHeight: 5,
-                  ),
-                  child: Slider(
-                    value: auth.maxDistanceKm,
-                    min: 0.5,
-                    max: 20.0,
-                    divisions: 39,
-                    onChanged: (v) => auth.updateSettings(maxDistanceKm: v),
-                  ),
-                ),
-
-                const SizedBox(height: 10),
 
                 // Age Range
                 Row(
@@ -283,16 +272,7 @@ class SettingsScreen extends StatelessWidget {
           const SizedBox(height: 12),
 
           TextButton(
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text(
-                    'Account deletion requests are processed via student registrar.',
-                  ),
-                  backgroundColor: BauhausColors.foreground,
-                ),
-              );
-            },
+            onPressed: () => _confirmDeleteAccount(context),
             child: Text(
               'DELETE STUDENT ACCOUNT',
               style: BauhausTextStyles.badge(

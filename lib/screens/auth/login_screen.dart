@@ -21,7 +21,8 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  bool _isLoading = false;
+  bool _isEmailLoading = false;
+  bool _isGoogleLoading = false;
 
   @override
   void dispose() {
@@ -30,15 +31,8 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  void _fillSampleStudent(String email) {
-    setState(() {
-      _emailController.text = email;
-      _passwordController.text = 'student1234';
-    });
-  }
-
   Future<void> _handleLogin() async {
-    setState(() => _isLoading = true);
+    setState(() => _isEmailLoading = true);
 
     try {
       await context.read<AuthProvider>().login(
@@ -46,6 +40,12 @@ class _LoginScreenState extends State<LoginScreen> {
         password: _passwordController.text,
       );
       if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Login successful'),
+            backgroundColor: BauhausColors.primaryBlue,
+          ),
+        );
         final auth = context.read<AuthProvider>();
         if (!auth.isProfileSetupComplete) {
           Navigator.of(context).pushReplacementNamed(AppRoutes.profileSetup);
@@ -64,17 +64,23 @@ class _LoginScreenState extends State<LoginScreen> {
       }
     } finally {
       if (mounted) {
-        setState(() => _isLoading = false);
+        setState(() => _isEmailLoading = false);
       }
     }
   }
 
   Future<void> _handleGoogleAuth() async {
-    setState(() => _isLoading = true);
+    setState(() => _isGoogleLoading = true);
 
     try {
       await context.read<AuthProvider>().signInWithGoogle();
       if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Login successful'),
+            backgroundColor: BauhausColors.primaryBlue,
+          ),
+        );
         if (context.read<AuthProvider>().isProfileSetupComplete) {
           Navigator.of(context).pushReplacementNamed(AppRoutes.home);
         } else {
@@ -92,9 +98,115 @@ class _LoginScreenState extends State<LoginScreen> {
       }
     } finally {
       if (mounted) {
-        setState(() => _isLoading = false);
+        setState(() => _isGoogleLoading = false);
       }
     }
+  }
+
+  void _showForgotPasswordDialog() {
+    final resetEmailController = TextEditingController(
+      text: _emailController.text,
+    );
+    bool isResetting = false;
+
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setStateDialog) {
+            return Dialog(
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              child: BauhausCard(
+                borderWidth: 3.0,
+                shadowOffset: 5.0,
+                cornerBadge: BauhausCornerBadgeType.squareBlue,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text('RESET PASSWORD', style: BauhausTextStyles.title()),
+                    const SizedBox(height: 12),
+                    Text(
+                      'Enter your university email to receive a password reset link.',
+                      style: BauhausTextStyles.bodyMedium(),
+                    ),
+                    const SizedBox(height: 16),
+                    BauhausTextField(
+                      label: 'UNIVERSITY EMAIL',
+                      hintText: 'student.name@email.kmutnb.ac.th',
+                      controller: resetEmailController,
+                      keyboardType: TextInputType.emailAddress,
+                      prefixIcon: const Icon(
+                        Icons.email,
+                        color: BauhausColors.foreground,
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: BauhausButton.outline(
+                            text: 'CANCEL',
+                            height: 44,
+                            onPressed: () => Navigator.of(ctx).pop(),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: BauhausButton(
+                            text: 'SEND LINK',
+                            height: 44,
+                            isLoading: isResetting,
+                            variant: BauhausButtonVariant.primaryBlue,
+                            onPressed: () async {
+                              setStateDialog(() => isResetting = true);
+                              try {
+                                await context
+                                    .read<AuthProvider>()
+                                    .resetPassword(resetEmailController.text);
+                                if (ctx.mounted) {
+                                  Navigator.of(ctx).pop();
+                                  ScaffoldMessenger.of(
+                                    this.context,
+                                  ).showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                        'Password reset link sent! Check your inbox.',
+                                      ),
+                                      backgroundColor:
+                                          BauhausColors.primaryBlue,
+                                    ),
+                                  );
+                                }
+                              } catch (e) {
+                                if (ctx.mounted) {
+                                  ScaffoldMessenger.of(ctx).showSnackBar(
+                                    SnackBar(
+                                      content: Text(e.toString()),
+                                      backgroundColor: BauhausColors.primaryRed,
+                                    ),
+                                  );
+                                }
+                              } finally {
+                                if (ctx.mounted) {
+                                  setStateDialog(() => isResetting = false);
+                                }
+                              }
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 
   @override
@@ -181,7 +293,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     Align(
                       alignment: Alignment.centerRight,
                       child: TextButton(
-                        onPressed: () {},
+                        onPressed: _showForgotPasswordDialog,
                         child: Text(
                           'FORGOT PASSWORD?',
                           style: BauhausTextStyles.badge(
@@ -195,7 +307,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       text: 'LOG IN TO CAMPUS',
                       isFullWidth: true,
                       height: 52,
-                      isLoading: _isLoading,
+                      isLoading: _isEmailLoading,
                       variant: BauhausButtonVariant.primaryRed,
                       onPressed: _handleLogin,
                     ),
@@ -225,54 +337,9 @@ class _LoginScreenState extends State<LoginScreen> {
                       text: 'CONTINUE WITH GOOGLE',
                       isFullWidth: true,
                       height: 52,
+                      isLoading: _isGoogleLoading,
                       icon: const FaIcon(FontAwesomeIcons.google, size: 20),
                       onPressed: _handleGoogleAuth,
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 20),
-
-              // Quick Sample Demo Accounts
-              BauhausCard.yellow(
-                borderWidth: 2.5,
-                shadowOffset: 4.0,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.flash_on,
-                          size: 16,
-                          color: BauhausColors.foreground,
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          'QUICK DEMO STUDENT LOGINS:',
-                          style: BauhausTextStyles.badge(),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [
-                        _buildQuickLoginChip(
-                          'Art (Arch)',
-                          'art.thana@student.chula.ac.th',
-                        ),
-                        _buildQuickLoginChip(
-                          'Mark (Eng)',
-                          'tanawat.s@student.ku.ac.th',
-                        ),
-                        _buildQuickLoginChip(
-                          'Mei (Comm Arts)',
-                          'chanya.k@student.cmu.ac.th',
-                        ),
-                      ],
                     ),
                   ],
                 ),
@@ -306,26 +373,6 @@ class _LoginScreenState extends State<LoginScreen> {
               const SizedBox(height: 16),
             ],
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildQuickLoginChip(String label, String email) {
-    return GestureDetector(
-      onTap: () => _fillSampleStudent(email),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        decoration: BoxDecoration(
-          color: BauhausColors.surface,
-          borderRadius: BorderRadius.zero,
-          border: Border.all(color: BauhausColors.border, width: 1.5),
-        ),
-        child: Text(
-          label.toUpperCase(),
-          style: BauhausTextStyles.badge(
-            color: BauhausColors.foreground,
-          ).copyWith(fontSize: 10),
         ),
       ),
     );

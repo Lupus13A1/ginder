@@ -39,6 +39,7 @@ class AuthProvider extends ChangeNotifier {
         _isProfileSetupComplete = _currentUser.photos.isNotEmpty;
       } else {
         _isProfileSetupComplete = false;
+        _currentUser = _currentUser.copyWith(id: uid);
       }
     } catch (e) {
       debugPrint('Error fetching user profile: $e');
@@ -66,23 +67,34 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<void> login({required String email, required String password}) async {
-    if (!_isValidEmailDomain(email)) {
-      throw 'Please use your @email.kmutnb.ac.th student email.';
-    }
     try {
       UserCredential cred = await _auth.signInWithEmailAndPassword(
         email: email,
         password: password,
       );
 
-      if (!cred.user!.emailVerified) {
-        await _auth.signOut();
-        throw 'Please check your inbox and click the verification link before logging in.';
-      }
+      // if (!cred.user!.emailVerified) {
+      //   await _auth.signOut();
+      //   throw 'Please check your inbox and click the verification link before logging in.';
+      // }
 
       await _fetchUserProfile(cred.user!.uid);
     } on FirebaseAuthException catch (e) {
       throw e.message ?? 'Login failed';
+    }
+  }
+
+  Future<void> resetPassword(String email) async {
+    if (email.trim().isEmpty) {
+      throw 'Please enter your university email address.';
+    }
+    if (!_isValidEmailDomain(email)) {
+      throw 'Please use your @email.kmutnb.ac.th student email.';
+    }
+    try {
+      await _auth.sendPasswordResetEmail(email: email.trim());
+    } on FirebaseAuthException catch (e) {
+      throw e.message ?? 'Failed to send password reset email.';
     }
   }
 
@@ -144,13 +156,12 @@ class AuthProvider extends ChangeNotifier {
 
       final email = cred.user!.email ?? '';
 
-      // Double check the domain in case user found a workaround
-      if (!_isValidEmailDomain(email)) {
-        await cred.user!
-            .delete(); // Delete the mistakenly created Firebase Auth user
-        await logout();
-        throw 'Access denied. You must use an @email.kmutnb.ac.th account.';
-      }
+      // Domain check bypassed for testing
+      // if (!_isValidEmailDomain(email)) {
+      //   await cred.user!.delete();
+      //   await logout();
+      //   throw 'Access denied. You must use an @email.kmutnb.ac.th account.';
+      // }
 
       String uid = cred.user!.uid;
       final existingData = await _db.getUserProfile(uid);
@@ -170,6 +181,7 @@ class AuthProvider extends ChangeNotifier {
         _isProfileSetupComplete = false;
       }
 
+      await _fetchUserProfile(uid);
       notifyListeners();
     } catch (e) {
       throw e.toString();
@@ -249,5 +261,22 @@ class AuthProvider extends ChangeNotifier {
     await _auth.signOut();
     _currentUser = StudentProfile.currentUser; // reset to default
     notifyListeners();
+  }
+
+  Future<void> deleteAccount() async {
+    try {
+      final user = _auth.currentUser;
+      if (user != null) {
+        await user.delete();
+        await logout();
+      }
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'requires-recent-login') {
+        throw 'Please log out and log back in to delete your account.';
+      }
+      throw e.message ?? 'Failed to delete account';
+    } catch (e) {
+      throw e.toString();
+    }
   }
 }

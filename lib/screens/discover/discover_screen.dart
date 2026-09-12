@@ -11,6 +11,8 @@ import '../../widgets/bauhaus_bottom_sheet.dart';
 import '../../models/student_profile.dart';
 import '../../providers/discover_provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/notification_provider.dart';
+import '../../models/notification_model.dart';
 import 'filter_bottom_sheet.dart';
 import '../../routes/app_routes.dart';
 
@@ -69,6 +71,15 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
           .read<DiscoverProvider>()
           .currentMatchProfile;
       if (matchedProfile != null) {
+        context.read<NotificationProvider>().addNotification(
+          NotificationItem(
+            id: DateTime.now().millisecondsSinceEpoch.toString(),
+            type: NotificationType.newMatch,
+            title: 'NEW MATCH!',
+            message: 'You and ${matchedProfile.nickname} matched!',
+            timestamp: DateTime.now(),
+          ),
+        );
         Navigator.of(
           context,
         ).pushNamed(AppRoutes.matchFound, arguments: matchedProfile);
@@ -93,6 +104,15 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
           .read<DiscoverProvider>()
           .currentMatchProfile;
       if (matchedProfile != null) {
+        context.read<NotificationProvider>().addNotification(
+          NotificationItem(
+            id: DateTime.now().millisecondsSinceEpoch.toString(),
+            type: NotificationType.newMatch,
+            title: 'NEW MATCH!',
+            message: 'You and ${matchedProfile.nickname} matched!',
+            timestamp: DateTime.now(),
+          ),
+        );
         Navigator.of(
           context,
         ).pushNamed(AppRoutes.matchFound, arguments: matchedProfile);

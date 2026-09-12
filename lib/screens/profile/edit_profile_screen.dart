@@ -21,7 +21,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   late TextEditingController _nameController;
   late TextEditingController _nicknameController;
   late TextEditingController _bioController;
-  late TextEditingController _majorController;
   late TextEditingController _anthemSongController;
   late TextEditingController _anthemArtistController;
   late TextEditingController _movieController;
@@ -33,14 +32,22 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   late List<String> _photos;
 
   final List<String> _faculties = [
-    'Architecture & Design',
-    'Engineering',
-    'Communication Arts',
-    'Medicine & Health',
-    'Business Administration',
-    'Science & Tech',
-    'Faculty of Arts',
-    'Faculty of Law',
+    'คณะวิศวกรรมศาสตร์ (Engineering)',
+    'คณะสถาปัตยกรรมและการออกแบบ (Architecture and Design)',
+    'คณะเทคโนโลยีสารสนเทศและนวัตกรรมดิจิทัล (ITDI)',
+    'คณะวิทยาศาสตร์ประยุกต์ (Applied Science)',
+    'คณะครุศาสตร์อุตสาหกรรม (Technical Education)',
+    'วิทยาลัยเทคโนโลยีอุตสาหกรรม (CIT)',
+    'คณะบริหารธุรกิจ (Business Administration)',
+    'คณะพัฒนาธุรกิจและอุตสาหกรรม (BID)',
+    'คณะบริหารธุรกิจและอุตสาหกรรมบริการ (BAS)',
+    'คณะศิลปศาสตร์ประยุกต์ (Applied Arts)',
+    'คณะอุตสาหกรรมเกษตร (Agro-Industry)',
+    'คณะเทคโนโลยีและการจัดการอุตสาหกรรม (FITM)',
+    'คณะวิศวกรรมศาสตร์และเทคโนโลยี (Rayong)',
+    'วิทยาลัยนานาชาติ (KMUTNB International College)',
+    'สถาบันนวัตกรรมเทคโนโลยีไทย-ฝรั่งเศส (TFII)',
+    'โครงการจัดตั้งวิทยาเขตระยอง / ปราจีนบุรี',
   ];
 
   final List<String> _years = [
@@ -79,12 +86,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _nameController = TextEditingController(text: user.name);
     _nicknameController = TextEditingController(text: user.nickname);
     _bioController = TextEditingController(text: user.bio);
-    _majorController = TextEditingController(text: user.major);
     _anthemSongController = TextEditingController(text: user.anthemSong);
     _anthemArtistController = TextEditingController(text: user.anthemArtist);
     _movieController = TextEditingController(text: user.favoriteMovie);
     _hangoutController = TextEditingController(text: user.campusHangout);
-    _selectedFaculty = user.faculty;
+    _selectedFaculty = _faculties.contains(user.faculty)
+        ? user.faculty
+        : _faculties.first;
     _selectedYear = user.year;
     _selectedInterests = Set.from(user.interests);
     _photos = List.from(user.photos);
@@ -161,7 +169,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _nameController.dispose();
     _nicknameController.dispose();
     _bioController.dispose();
-    _majorController.dispose();
     _anthemSongController.dispose();
     _anthemArtistController.dispose();
     _movieController.dispose();
@@ -187,7 +194,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       name: _nameController.text,
       nickname: _nicknameController.text,
       bio: _bioController.text,
-      major: _majorController.text,
+      major: '-',
       faculty: _selectedFaculty,
       year: _selectedYear,
       interests: _selectedInterests.toList(),
@@ -254,124 +261,193 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     itemBuilder: (context, index) {
                       final isUploadingThis =
                           _isUploadingPhoto && _uploadingSlotIndex == index;
+                      final hasPhoto = index < _photos.length;
 
-                      if (index < _photos.length) {
-                        return Container(
-                          decoration: BoxDecoration(
-                            border: Border.all(
-                              color: BauhausColors.border,
-                              width: 2.0,
-                            ),
-                          ),
-                          child: Stack(
-                            fit: StackFit.expand,
-                            children: [
-                              Image.network(
-                                _photos[index],
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) =>
-                                    const Center(
-                                      child: Icon(Icons.person, size: 36),
-                                    ),
-                              ),
-                              if (isUploadingThis)
-                                Container(
-                                  color: Colors.black54,
-                                  child: const Center(
-                                    child: CircularProgressIndicator(
-                                      color: BauhausColors.primaryYellow,
-                                      strokeWidth: 2.5,
-                                    ),
-                                  ),
-                                ),
-                              // Delete button
-                              Positioned(
-                                top: 4,
-                                right: 4,
-                                child: GestureDetector(
-                                  onTap: () => _removePhoto(index),
-                                  child: Container(
-                                    padding: const EdgeInsets.all(2),
-                                    color: BauhausColors.primaryRed,
-                                    child: const Icon(
-                                      Icons.close,
-                                      color: Colors.white,
-                                      size: 14,
-                                    ),
-                                  ),
+                      return LayoutBuilder(
+                        builder: (context, constraints) {
+                          Widget content;
+                          if (hasPhoto) {
+                            content = Container(
+                              decoration: BoxDecoration(
+                                border: Border.all(
+                                  color: BauhausColors.border,
+                                  width: 2.0,
                                 ),
                               ),
-                              // Replace button
-                              Positioned(
-                                bottom: 4,
-                                left: 4,
-                                child: GestureDetector(
-                                  onTap: () => _handlePhotoUpload(index),
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 4,
-                                      vertical: 2,
-                                    ),
-                                    color: BauhausColors.surface,
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        const Icon(
-                                          Icons.sync,
-                                          size: 10,
-                                          color: BauhausColors.foreground,
+                              child: Stack(
+                                fit: StackFit.expand,
+                                children: [
+                                  Image.network(
+                                    _photos[index],
+                                    fit: BoxFit.cover,
+                                    errorBuilder:
+                                        (context, error, stackTrace) =>
+                                            const Center(
+                                              child: Icon(
+                                                Icons.person,
+                                                size: 36,
+                                              ),
+                                            ),
+                                  ),
+                                  if (isUploadingThis)
+                                    Container(
+                                      color: Colors.black54,
+                                      child: const Center(
+                                        child: CircularProgressIndicator(
+                                          color: BauhausColors.primaryYellow,
+                                          strokeWidth: 2.5,
                                         ),
-                                        const SizedBox(width: 2),
-                                        Text(
-                                          'EDIT',
-                                          style: BauhausTextStyles.badge()
-                                              .copyWith(fontSize: 7),
+                                      ),
+                                    ),
+                                  Positioned(
+                                    top: 4,
+                                    right: 4,
+                                    child: GestureDetector(
+                                      onTap: () => _removePhoto(index),
+                                      child: Container(
+                                        padding: const EdgeInsets.all(2),
+                                        color: BauhausColors.primaryRed,
+                                        child: const Icon(
+                                          Icons.close,
+                                          color: Colors.white,
+                                          size: 14,
                                         ),
-                                      ],
+                                      ),
                                     ),
                                   ),
+                                  Positioned(
+                                    bottom: 4,
+                                    left: 4,
+                                    child: GestureDetector(
+                                      onTap: () => _handlePhotoUpload(index),
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 4,
+                                          vertical: 2,
+                                        ),
+                                        color: BauhausColors.surface,
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            const Icon(
+                                              Icons.sync,
+                                              size: 10,
+                                              color: BauhausColors.foreground,
+                                            ),
+                                            const SizedBox(width: 2),
+                                            Text(
+                                              'EDIT',
+                                              style: BauhausTextStyles.badge()
+                                                  .copyWith(fontSize: 7),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          } else {
+                            content = GestureDetector(
+                              onTap: () => _handlePhotoUpload(index),
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: BauhausColors.cardYellow.withAlpha(90),
+                                  border: Border.all(
+                                    color: BauhausColors.border,
+                                    width: 1.5,
+                                  ),
                                 ),
+                                child: isUploadingThis
+                                    ? const Center(
+                                        child: CircularProgressIndicator(
+                                          color: BauhausColors.primaryRed,
+                                          strokeWidth: 2.5,
+                                        ),
+                                      )
+                                    : Column(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          const Icon(
+                                            Icons.add_a_photo,
+                                            color: BauhausColors.foreground,
+                                            size: 20,
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            'ADD',
+                                            style: BauhausTextStyles.badge()
+                                                .copyWith(fontSize: 8),
+                                          ),
+                                        ],
+                                      ),
                               ),
-                            ],
-                          ),
-                        );
-                      } else {
-                        return GestureDetector(
-                          onTap: () => _handlePhotoUpload(index),
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: BauhausColors.cardYellow.withAlpha(90),
-                              border: Border.all(
-                                color: BauhausColors.border,
-                                width: 1.5,
-                              ),
-                            ),
-                            child: isUploadingThis
-                                ? const Center(
-                                    child: CircularProgressIndicator(
+                            );
+                          }
+
+                          return DragTarget<int>(
+                            onWillAcceptWithDetails: (details) =>
+                                details.data != index,
+                            onAcceptWithDetails: (details) {
+                              final fromIndex = details.data;
+                              int toIndex = index;
+                              setState(() {
+                                // Clamp toIndex to the end of the list if dragged to an empty slot
+                                if (toIndex >= _photos.length) {
+                                  toIndex = _photos.length - 1;
+                                }
+                                if (fromIndex != toIndex) {
+                                  final movedPhoto = _photos.removeAt(
+                                    fromIndex,
+                                  );
+                                  _photos.insert(toIndex, movedPhoto);
+                                }
+                              });
+                            },
+                            builder: (context, candidateData, rejectedData) {
+                              Widget targetContent = content;
+
+                              if (candidateData.isNotEmpty) {
+                                targetContent = Container(
+                                  decoration: BoxDecoration(
+                                    border: Border.all(
                                       color: BauhausColors.primaryRed,
-                                      strokeWidth: 2.5,
+                                      width: 4.0,
                                     ),
-                                  )
-                                : Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      const Icon(
-                                        Icons.add_a_photo,
-                                        color: BauhausColors.foreground,
-                                        size: 20,
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        'ADD',
-                                        style: BauhausTextStyles.badge()
-                                            .copyWith(fontSize: 8),
-                                      ),
-                                    ],
                                   ),
-                          ),
-                        );
-                      }
+                                  child: content,
+                                );
+                              }
+
+                              if (hasPhoto) {
+                                return LongPressDraggable<int>(
+                                  data: index,
+                                  feedback: Material(
+                                    color: Colors.transparent,
+                                    child: SizedBox(
+                                      width: constraints.maxWidth,
+                                      height: constraints.maxHeight,
+                                      child: Opacity(
+                                        opacity: 0.8,
+                                        child: content,
+                                      ),
+                                    ),
+                                  ),
+                                  childWhenDragging: Opacity(
+                                    opacity: 0.3,
+                                    child: content,
+                                  ),
+                                  child: targetContent,
+                                );
+                              } else {
+                                return targetContent;
+                              }
+                            },
+                          );
+                        },
+                      );
                     },
                   ),
                 ],
@@ -408,11 +484,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         ),
                       ),
                     ],
-                  ),
-                  const SizedBox(height: 12),
-                  BauhausTextField(
-                    label: 'MAJOR / FIELD',
-                    controller: _majorController,
                   ),
                   const SizedBox(height: 12),
 

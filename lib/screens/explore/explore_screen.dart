@@ -4,6 +4,8 @@ import '../../theme/bauhaus_text_styles.dart';
 import '../../widgets/bauhaus_shapes.dart';
 import '../../widgets/bauhaus_badge.dart';
 import '../../widgets/bauhaus_bottom_sheet.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import '../../services/database_service.dart';
 import '../../models/student_profile.dart';
 import '../../routes/app_routes.dart';
 
@@ -18,6 +20,10 @@ class _ExploreScreenState extends State<ExploreScreen> {
   String _selectedVibe = 'ALL';
   String _searchQuery = '';
   final TextEditingController _searchController = TextEditingController();
+
+  List<StudentProfile> _allProfiles = [];
+  bool _isLoading = true;
+  final DatabaseService _db = DatabaseService();
 
   final List<Map<String, dynamic>> _campusVibes = [
     {
@@ -59,14 +65,32 @@ class _ExploreScreenState extends State<ExploreScreen> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    _loadProfiles();
+  }
+
+  Future<void> _loadProfiles() async {
+    setState(() => _isLoading = true);
+    final currentUserId =
+        FirebaseAuth.instance.currentUser?.uid ?? 'my_user_id';
+    final profiles = await _db.getDiscoverProfiles(currentUserId);
+    if (mounted) {
+      setState(() {
+        _allProfiles = profiles;
+        _isLoading = false;
+      });
+    }
+  }
+
+  @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
   }
 
   List<StudentProfile> _getFilteredProfiles() {
-    final all = StudentProfile.sampleProfiles;
-    return all.where((p) {
+    return _allProfiles.where((p) {
       if (_searchQuery.isNotEmpty) {
         final q = _searchQuery.toLowerCase();
         final match =
@@ -165,9 +189,37 @@ class _ExploreScreenState extends State<ExploreScreen> {
             children: [
               Expanded(
                 child: GestureDetector(
-                  onTap: () {
-                    Navigator.of(context).pop();
-                    Navigator.of(context).pushNamed(AppRoutes.matchFound, arguments: profile);
+                  onTap: () async {
+                    Navigator.of(context).pop(); // Close bottom sheet
+
+                    final currentUserId =
+                        FirebaseAuth.instance.currentUser?.uid ?? 'my_user_id';
+
+                    // Optimistic UI update
+                    setState(() {
+                      _allProfiles.removeWhere((p) => p.id == profile.id);
+                    });
+
+                    // Show a snackbar
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Sent like to ${profile.nickname}!'),
+                        backgroundColor: BauhausColors.primaryRed,
+                        duration: const Duration(seconds: 2),
+                      ),
+                    );
+
+                    // Send like to DB
+                    final isMatch = await _db.swipeRight(
+                      currentUserId,
+                      profile.id,
+                    );
+
+                    if (isMatch && mounted) {
+                      Navigator.of(
+                        context,
+                      ).pushNamed(AppRoutes.matchFound, arguments: profile);
+                    }
                   },
                   child: Container(
                     height: 48,
@@ -334,134 +386,166 @@ class _ExploreScreenState extends State<ExploreScreen> {
 
             // 2-Column Grid
             Expanded(
-              child: profiles.isEmpty
-                  ? Center(
-                      child: Text(
-                        'No students found for this vibe.',
-                        style: BauhausTextStyles.bodyMedium(),
+              child: _isLoading
+                  ? const Center(
+                      child: CircularProgressIndicator(
+                        color: BauhausColors.primaryRed,
                       ),
                     )
-                  : GridView.builder(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 6,
-                      ),
-                      gridDelegate:
-                          const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 2,
-                            crossAxisSpacing: 12,
-                            mainAxisSpacing: 12,
-                            childAspectRatio: 0.72,
-                          ),
-                      itemCount: profiles.length,
-                      itemBuilder: (context, index) {
-                        final student = profiles[index];
-                        return GestureDetector(
-                          onTap: () => _showStudentDetails(student),
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: BauhausColors.surface,
-                              borderRadius: BorderRadius.zero,
-                              border: Border.all(
-                                color: BauhausColors.border,
-                                width: 2.5,
-                              ),
-                              boxShadow: const [
-                                BoxShadow(
-                                  color: BauhausColors.border,
-                                  offset: Offset(3, 3),
-                                  blurRadius: 0,
+                  : RefreshIndicator(
+                      onRefresh: _loadProfiles,
+                      color: BauhausColors.primaryRed,
+                      child: profiles.isEmpty
+                          ? ListView(
+                              physics: const AlwaysScrollableScrollPhysics(),
+                              children: [
+                                SizedBox(
+                                  height:
+                                      MediaQuery.of(context).size.height * 0.3,
+                                ),
+                                Center(
+                                  child: Text(
+                                    'No students found for this vibe.\nPull down to refresh.',
+                                    textAlign: TextAlign.center,
+                                    style: BauhausTextStyles.bodyMedium(),
+                                  ),
                                 ),
                               ],
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                // Photo
-                                Expanded(
-                                  flex: 6,
-                                  child: Stack(
-                                    fit: StackFit.expand,
-                                    children: [
-                                      Image.network(
-                                        student.photos.isNotEmpty
-                                            ? student.photos.first
-                                            : '',
-                                        fit: BoxFit.cover,
-                                        errorBuilder:
-                                            (context, error, stackTrace) =>
-                                                Container(
-                                                  color:
-                                                      BauhausColors.cardYellow,
-                                                  child: const Center(
-                                                    child: Icon(
-                                                      Icons.person,
-                                                      size: 40,
-                                                    ),
-                                                  ),
-                                                ),
+                            )
+                          : GridView.builder(
+                              physics: const AlwaysScrollableScrollPhysics(),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 6,
+                              ),
+                              gridDelegate:
+                                  const SliverGridDelegateWithFixedCrossAxisCount(
+                                    crossAxisCount: 2,
+                                    crossAxisSpacing: 12,
+                                    mainAxisSpacing: 12,
+                                    childAspectRatio: 0.72,
+                                  ),
+                              itemCount: profiles.length,
+                              itemBuilder: (context, index) {
+                                final student = profiles[index];
+                                return GestureDetector(
+                                  onTap: () => _showStudentDetails(student),
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      color: BauhausColors.surface,
+                                      borderRadius: BorderRadius.zero,
+                                      border: Border.all(
+                                        color: BauhausColors.border,
+                                        width: 2.5,
                                       ),
-                                      Positioned(
-                                        top: 6,
-                                        left: 6,
-                                        child: BauhausBadge(
-                                          label: '${student.distanceKm} KM',
-                                          variant: BauhausBadgeVariant.yellow,
-                                          fontSize: 8,
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 5,
-                                            vertical: 2,
+                                      boxShadow: const [
+                                        BoxShadow(
+                                          color: BauhausColors.border,
+                                          offset: Offset(3, 3),
+                                          blurRadius: 0,
+                                        ),
+                                      ],
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.stretch,
+                                      children: [
+                                        // Photo
+                                        Expanded(
+                                          flex: 6,
+                                          child: Stack(
+                                            fit: StackFit.expand,
+                                            children: [
+                                              Image.network(
+                                                student.photos.isNotEmpty
+                                                    ? student.photos.first
+                                                    : '',
+                                                fit: BoxFit.cover,
+                                                errorBuilder:
+                                                    (
+                                                      context,
+                                                      error,
+                                                      stackTrace,
+                                                    ) => Container(
+                                                      color: BauhausColors
+                                                          .cardYellow,
+                                                      child: const Center(
+                                                        child: Icon(
+                                                          Icons.person,
+                                                          size: 40,
+                                                        ),
+                                                      ),
+                                                    ),
+                                              ),
+                                              Positioned(
+                                                top: 6,
+                                                left: 6,
+                                                child: BauhausBadge(
+                                                  label:
+                                                      '${student.distanceKm} KM',
+                                                  variant: BauhausBadgeVariant
+                                                      .yellow,
+                                                  fontSize: 8,
+                                                  padding:
+                                                      const EdgeInsets.symmetric(
+                                                        horizontal: 5,
+                                                        vertical: 2,
+                                                      ),
+                                                ),
+                                              ),
+                                            ],
                                           ),
                                         ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                // Info Strip
-                                Container(
-                                  padding: const EdgeInsets.all(8),
-                                  decoration: const BoxDecoration(
-                                    color: BauhausColors.surface,
-                                    border: Border(
-                                      top: BorderSide(
-                                        color: BauhausColors.border,
-                                        width: 2.0,
-                                      ),
+                                        // Info Strip
+                                        Container(
+                                          padding: const EdgeInsets.all(8),
+                                          decoration: const BoxDecoration(
+                                            color: BauhausColors.surface,
+                                            border: Border(
+                                              top: BorderSide(
+                                                color: BauhausColors.border,
+                                                width: 2.0,
+                                              ),
+                                            ),
+                                          ),
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                '${student.nickname}, ${student.age}'
+                                                    .toUpperCase(),
+                                                style: BauhausTextStyles.title()
+                                                    .copyWith(fontSize: 13),
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                              const SizedBox(height: 2),
+                                              Text(
+                                                student.faculty
+                                                    .split(' ')
+                                                    .first,
+                                                style:
+                                                    BauhausTextStyles.caption(
+                                                      color: BauhausColors
+                                                          .primaryRed,
+                                                    ).copyWith(
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                      fontSize: 10,
+                                                    ),
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        '${student.nickname}, ${student.age}'
-                                            .toUpperCase(),
-                                        style: BauhausTextStyles.title()
-                                            .copyWith(fontSize: 13),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                      const SizedBox(height: 2),
-                                      Text(
-                                        student.faculty.split(' ').first,
-                                        style:
-                                            BauhausTextStyles.caption(
-                                              color: BauhausColors.primaryRed,
-                                            ).copyWith(
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 10,
-                                            ),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
+                                );
+                              },
                             ),
-                          ),
-                        );
-                      },
                     ),
             ),
           ],

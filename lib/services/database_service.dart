@@ -103,44 +103,78 @@ class DatabaseService {
     }
   }
 
-  /// Fetch profiles available for discovery from Firebase RTDB (excluding self and already swiped)
+  /// Fetch profiles available for discovery from Firebase RTDB (excluding self, already swiped, and matched)
   Future<List<StudentProfile>> getDiscoverProfiles(String currentUserId) async {
     try {
-      final Set<String> swipedUserIds = {};
+      final Set<String> excludedUserIds = {};
+
       if (currentUserId.isNotEmpty) {
+        // 1. Exclude users we've already swiped on (likes, passes, superlikes)
         final swipesSnapshot = await _db.ref('swipes').get();
-        if (swipesSnapshot.exists && swipesSnapshot.value is Map) {
-          final swipesMap = swipesSnapshot.value as Map;
-          swipesMap.forEach((key, val) {
-            if (val is Map) {
-              final fromUser = val['fromUserId']?.toString();
-              final toUser = val['toUserId']?.toString();
-              if (fromUser == currentUserId && toUser != null) {
-                swipedUserIds.add(toUser);
+        if (swipesSnapshot.exists) {
+          for (final child in swipesSnapshot.children) {
+            final val = child.value;
+            if (val is Map || val is List) {
+              final map = _mapFromSnapshot(val);
+              if (map != null) {
+                final fromUser = map['fromUserId']?.toString();
+                final toUser = map['toUserId']?.toString();
+                if (fromUser == currentUserId && toUser != null) {
+                  excludedUserIds.add(toUser);
+                }
               }
             }
-          });
+          }
+        }
+
+        // 2. Exclude users we are already matched with
+        final matchesSnapshot = await _db.ref('matches').get();
+        if (matchesSnapshot.exists) {
+          for (final child in matchesSnapshot.children) {
+            final val = child.value;
+            if (val is Map || val is List) {
+              final map = _mapFromSnapshot(val);
+              if (map != null) {
+                final usersMap = map['users'];
+                if (usersMap is Map && usersMap.containsKey(currentUserId)) {
+                  usersMap.forEach((uId, _) {
+                    if (uId.toString() != currentUserId) {
+                      excludedUserIds.add(uId.toString());
+                    }
+                  });
+                }
+              }
+            }
+          }
         }
       }
 
+      // 3. Fetch all users and filter
       final usersSnapshot = await _db.ref('users').get();
       final List<StudentProfile> profiles = [];
 
-      if (usersSnapshot.exists && usersSnapshot.value is Map) {
-        final usersMap = usersSnapshot.value as Map;
-        usersMap.forEach((key, val) {
-          final uid = key.toString();
-          if (uid != currentUserId && !swipedUserIds.contains(uid)) {
+      if (usersSnapshot.exists) {
+        for (final child in usersSnapshot.children) {
+          final uid = child.key;
+          if (uid != null &&
+              uid != currentUserId &&
+              !excludedUserIds.contains(uid)) {
+            final val = child.value;
             final userMap = _mapFromSnapshot(val);
             if (userMap != null) {
-              profiles.add(StudentProfile.fromMap(userMap, id: uid));
+              try {
+                profiles.add(StudentProfile.fromMap(userMap, id: uid));
+              } catch (e) {
+                debugPrint('Error parsing user profile $uid: $e');
+              }
             }
           }
-        });
+        }
       }
 
       return profiles;
-    } catch (_) {
+    } catch (e) {
+      debugPrint('Error in getDiscoverProfiles: $e');
       return [];
     }
   }
@@ -205,17 +239,24 @@ class DatabaseService {
     }
   }
 
-  /// Reset all swipes made by current user so deck can be swiped again
+  /// Reset all pass (left) swipes made by current user so deck can be swiped again.
+  /// Like and Superlike swipes are kept so users don't see them again.
   Future<void> resetUserSwipes(String myUid) async {
     try {
       final swipesSnapshot = await _db.ref('swipes').get();
-      if (swipesSnapshot.exists && swipesSnapshot.value is Map) {
-        final swipesMap = swipesSnapshot.value as Map;
-        for (final entry in swipesMap.entries) {
-          if (entry.value is Map) {
-            final fromUser = (entry.value as Map)['fromUserId']?.toString();
-            if (fromUser == myUid) {
-              await _db.ref('swipes/${entry.key}').remove();
+      if (swipesSnapshot.exists) {
+        for (final child in swipesSnapshot.children) {
+          final val = child.value;
+          if (val is Map || val is List) {
+            final map = _mapFromSnapshot(val);
+            if (map != null) {
+              final fromUser = map['fromUserId']?.toString();
+              final type = map['type']?.toString();
+              if (fromUser == myUid && type == 'pass') {
+                if (child.key != null) {
+                  await _db.ref('swipes/${child.key}').remove();
+                }
+              }
             }
           }
         }

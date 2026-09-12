@@ -6,7 +6,7 @@ class NotificationProvider extends ChangeNotifier {
   String _selectedCategory = 'ALL';
 
   NotificationProvider() {
-    _notifications = NotificationItem.sampleNotifications;
+    _notifications = [];
   }
 
   List<NotificationItem> get notifications {

@@ -22,22 +22,28 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _nameController = TextEditingController();
   final _nicknameController = TextEditingController();
   final _ageController = TextEditingController();
-  final _majorController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-
-  String _selectedFaculty = 'Architecture & Design';
+  String _selectedFaculty = 'คณะวิศวกรรมศาสตร์ (Engineering)';
   String _selectedYear = 'Year 3 (Junior)';
 
   final List<String> _faculties = [
-    'Architecture & Design',
-    'Engineering',
-    'Communication Arts',
-    'Medicine & Health',
-    'Business Administration',
-    'Science & Tech',
-    'Faculty of Arts',
-    'Faculty of Law',
+    'คณะวิศวกรรมศาสตร์ (Engineering)',
+    'คณะสถาปัตยกรรมและการออกแบบ (Architecture and Design)',
+    'คณะเทคโนโลยีสารสนเทศและนวัตกรรมดิจิทัล (ITDI)',
+    'คณะวิทยาศาสตร์ประยุกต์ (Applied Science)',
+    'คณะครุศาสตร์อุตสาหกรรม (Technical Education)',
+    'วิทยาลัยเทคโนโลยีอุตสาหกรรม (CIT)',
+    'คณะบริหารธุรกิจ (Business Administration)',
+    'คณะพัฒนาธุรกิจและอุตสาหกรรม (BID)',
+    'คณะบริหารธุรกิจและอุตสาหกรรมบริการ (BAS)',
+    'คณะศิลปศาสตร์ประยุกต์ (Applied Arts)',
+    'คณะอุตสาหกรรมเกษตร (Agro-Industry)',
+    'คณะเทคโนโลยีและการจัดการอุตสาหกรรม (FITM)',
+    'คณะวิศวกรรมศาสตร์และเทคโนโลยี (Rayong)',
+    'วิทยาลัยนานาชาติ (KMUTNB International College)',
+    'สถาบันนวัตกรรมเทคโนโลยีไทย-ฝรั่งเศส (TFII)',
+    'โครงการจัดตั้งวิทยาเขตระยอง / ปราจีนบุรี',
   ];
 
   final List<String> _years = [
@@ -48,21 +54,21 @@ class _RegisterScreenState extends State<RegisterScreen> {
     'Postgraduate',
   ];
 
-  bool _isLoading = false;
+  bool _isEmailLoading = false;
+  bool _isGoogleLoading = false;
 
   @override
   void dispose() {
     _nameController.dispose();
     _nicknameController.dispose();
     _ageController.dispose();
-    _majorController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
 
   Future<void> _handleRegister() async {
-    setState(() => _isLoading = true);
+    setState(() => _isEmailLoading = true);
     final age = int.tryParse(_ageController.text) ?? 20;
 
     try {
@@ -75,9 +81,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             : 'Student',
         age: age,
         faculty: _selectedFaculty,
-        major: _majorController.text.isNotEmpty
-            ? _majorController.text
-            : 'General Studies',
+        major: '-',
         year: _selectedYear,
         email: _emailController.text.isNotEmpty
             ? _emailController.text
@@ -109,13 +113,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
       }
     } finally {
       if (mounted) {
-        setState(() => _isLoading = false);
+        setState(() => _isEmailLoading = false);
       }
     }
   }
 
   Future<void> _handleGoogleRegister() async {
-    setState(() => _isLoading = true);
+    setState(() => _isGoogleLoading = true);
 
     try {
       await context.read<AuthProvider>().signInWithGoogle();
@@ -137,7 +141,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       }
     } finally {
       if (mounted) {
-        setState(() => _isLoading = false);
+        setState(() => _isGoogleLoading = false);
       }
     }
   }
@@ -220,27 +224,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       ],
                     ),
                     const SizedBox(height: 14),
-                    Row(
-                      children: [
-                        Expanded(
-                          flex: 1,
-                          child: BauhausTextField(
-                            label: 'AGE',
-                            hintText: 'e.g. 20',
-                            controller: _ageController,
-                            keyboardType: TextInputType.number,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          flex: 2,
-                          child: BauhausTextField(
-                            label: 'MAJOR / FIELD',
-                            hintText: 'e.g. Computer Engineering',
-                            controller: _majorController,
-                          ),
-                        ),
-                      ],
+                    BauhausTextField(
+                      label: 'AGE',
+                      hintText: 'e.g. 20',
+                      controller: _ageController,
+                      keyboardType: TextInputType.number,
                     ),
                     const SizedBox(height: 14),
 
@@ -367,7 +355,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       text: 'CONTINUE TO PROFILE SETUP',
                       isFullWidth: true,
                       height: 52,
-                      isLoading: _isLoading,
+                      isLoading: _isEmailLoading,
                       variant: BauhausButtonVariant.primaryBlue,
                       onPressed: _handleRegister,
                     ),
@@ -397,7 +385,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       text: 'REGISTER WITH GOOGLE',
                       isFullWidth: true,
                       height: 52,
-                      isLoading: _isLoading,
+                      isLoading: _isGoogleLoading,
                       icon: const FaIcon(FontAwesomeIcons.google, size: 20),
                       onPressed: _handleGoogleRegister,
                     ),
