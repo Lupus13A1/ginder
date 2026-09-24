@@ -209,20 +209,20 @@ class _BauhausButtonState extends State<BauhausButton> {
         padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 12.0),
         decoration: BoxDecoration(
           color: _getBackgroundColor(),
-          borderRadius: borderRadius,
-          border: isGhost
+          borderRadius: BorderRadius.circular(12),
+          border:
+              isGhost ||
+                  widget.variant == BauhausButtonVariant.primaryBlue ||
+                  widget.variant == BauhausButtonVariant.primaryRed
               ? null
-              : Border.all(
-                  color: BauhausColors.border,
-                  width: widget.borderWidth,
-                ),
+              : Border.all(color: BauhausColors.border, width: 1.0),
           boxShadow: (isGhost || _isPressed || widget.onPressed == null)
               ? []
               : [
                   BoxShadow(
-                    color: BauhausColors.border,
-                    offset: Offset(widget.shadowOffset, widget.shadowOffset),
-                    blurRadius: 0,
+                    color: Colors.black.withOpacity(0.05),
+                    offset: const Offset(0, 4),
+                    blurRadius: 10,
                     spreadRadius: 0,
                   ),
                 ],

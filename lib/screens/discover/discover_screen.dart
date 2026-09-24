@@ -23,41 +23,183 @@ class DiscoverScreen extends StatefulWidget {
   State<DiscoverScreen> createState() => _DiscoverScreenState();
 }
 
-class _DiscoverScreenState extends State<DiscoverScreen> {
+class _DiscoverScreenState extends State<DiscoverScreen>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _animationController;
+  Animation<Offset>? _slideAnimation;
   Offset _dragOffset = Offset.zero;
+  bool _isAnimating = false;
 
   @override
   void initState() {
     super.initState();
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 260),
+    );
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final myUid = context.read<AuthProvider>().currentUser.id;
       context.read<DiscoverProvider>().loadProfiles(uid: myUid);
     });
   }
 
-  void _onPanStart(DragStartDetails details) {}
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
+
+  void _onPanStart(DragStartDetails details) {
+    if (_isAnimating) return;
+  }
 
   void _onPanUpdate(DragUpdateDetails details) {
+    if (_isAnimating) return;
     setState(() {
       _dragOffset += details.delta;
     });
   }
 
   void _onPanEnd(DragEndDetails details) {
+    if (_isAnimating) return;
+
     final dx = _dragOffset.dx;
     final dy = _dragOffset.dy;
+    final vx = details.velocity.pixelsPerSecond.dx;
+    final vy = details.velocity.pixelsPerSecond.dy;
 
-    if (dx > 120) {
-      _triggerLike();
-    } else if (dx < -120) {
-      _triggerPass();
-    } else if (dy < -120) {
-      _triggerSuperLike();
+    final size = MediaQuery.of(context).size;
+    final screenWidth = size.width;
+    final screenHeight = size.height;
+
+    if (dx > 100 || vx > 650) {
+      _animateAndSwipe(
+        targetOffset: Offset(screenWidth * 1.4, _dragOffset.dy + vy * 0.08),
+        onComplete: _triggerLike,
+      );
+    } else if (dx < -100 || vx < -650) {
+      _animateAndSwipe(
+        targetOffset: Offset(-screenWidth * 1.4, _dragOffset.dy + vy * 0.08),
+        onComplete: _triggerPass,
+      );
+    } else if (dy < -100 || vy < -650) {
+      _animateAndSwipe(
+        targetOffset: Offset(_dragOffset.dx, -screenHeight * 1.2),
+        onComplete: _triggerSuperLike,
+      );
+    } else {
+      _animateToCenter();
+    }
+  }
+
+  void _animateAndSwipe({
+    required Offset targetOffset,
+    required VoidCallback onComplete,
+    Duration duration = const Duration(milliseconds: 260),
+  }) {
+    if (_isAnimating) return;
+    _isAnimating = true;
+
+    final startOffset = _dragOffset;
+    _animationController.duration = duration;
+
+    _slideAnimation = Tween<Offset>(begin: startOffset, end: targetOffset)
+        .animate(
+          CurvedAnimation(
+            parent: _animationController,
+            curve: Curves.easeOutCubic,
+          ),
+        );
+
+    void updateListener() {
+      if (mounted) {
+        setState(() {
+          _dragOffset = _slideAnimation!.value;
+        });
+      }
     }
 
-    setState(() {
-      _dragOffset = Offset.zero;
+    _animationController.addListener(updateListener);
+
+    _animationController.forward(from: 0.0).then((_) {
+      _animationController.removeListener(updateListener);
+      if (!mounted) return;
+      setState(() {
+        _dragOffset = Offset.zero;
+        _isAnimating = false;
+      });
+      onComplete();
     });
+  }
+
+  void _animateToCenter({
+    Duration duration = const Duration(milliseconds: 240),
+  }) {
+    if (_isAnimating) return;
+    _isAnimating = true;
+
+    final startOffset = _dragOffset;
+    _animationController.duration = duration;
+
+    _slideAnimation = Tween<Offset>(begin: startOffset, end: Offset.zero)
+        .animate(
+          CurvedAnimation(
+            parent: _animationController,
+            curve: Curves.easeOutBack,
+          ),
+        );
+
+    void updateListener() {
+      if (mounted) {
+        setState(() {
+          _dragOffset = _slideAnimation!.value;
+        });
+      }
+    }
+
+    _animationController.addListener(updateListener);
+
+    _animationController.forward(from: 0.0).then((_) {
+      _animationController.removeListener(updateListener);
+      if (!mounted) return;
+      setState(() {
+        _dragOffset = Offset.zero;
+        _isAnimating = false;
+      });
+    });
+  }
+
+  void _swipeRightByButton() {
+    if (_isAnimating || context.read<DiscoverProvider>().currentCard == null)
+      return;
+    final screenWidth = MediaQuery.of(context).size.width;
+    _animateAndSwipe(
+      targetOffset: Offset(screenWidth * 1.4, 25),
+      onComplete: _triggerLike,
+      duration: const Duration(milliseconds: 280),
+    );
+  }
+
+  void _swipeLeftByButton() {
+    if (_isAnimating || context.read<DiscoverProvider>().currentCard == null)
+      return;
+    final screenWidth = MediaQuery.of(context).size.width;
+    _animateAndSwipe(
+      targetOffset: Offset(-screenWidth * 1.4, 25),
+      onComplete: _triggerPass,
+      duration: const Duration(milliseconds: 280),
+    );
+  }
+
+  void _swipeUpByButton() {
+    if (_isAnimating || context.read<DiscoverProvider>().currentCard == null)
+      return;
+    final screenHeight = MediaQuery.of(context).size.height;
+    _animateAndSwipe(
+      targetOffset: Offset(0, -screenHeight * 1.2),
+      onComplete: _triggerSuperLike,
+      duration: const Duration(milliseconds: 280),
+    );
   }
 
   void _triggerLike() async {
@@ -121,6 +263,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
   }
 
   void _triggerRewind() async {
+    if (_isAnimating) return;
     HapticFeedback.selectionClick();
     final myUid = context.read<AuthProvider>().currentUser.id;
     await context.read<DiscoverProvider>().rewind(uid: myUid);
@@ -396,11 +539,29 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                         clipBehavior: Clip.none,
                         alignment: Alignment.center,
                         children: [
-                          // Background card under stack (if exists)
+                          // Background card under stack (smoothly scales up and rises like Tinder)
                           if (discover.profiles.length > 1)
-                            _buildCardWidget(
-                              discover.profiles[1],
-                              isBackground: true,
+                            Builder(
+                              builder: (context) {
+                                final dragDist = math.max(
+                                  _dragOffset.dx.abs(),
+                                  -_dragOffset.dy,
+                                );
+                                final swipeProgress = (dragDist / 160).clamp(
+                                  0.0,
+                                  1.0,
+                                );
+                                return Transform.translate(
+                                  offset: Offset(0, 10 * (1 - swipeProgress)),
+                                  child: Transform.scale(
+                                    scale: 0.94 + (0.06 * swipeProgress),
+                                    child: _buildCardWidget(
+                                      discover.profiles[1],
+                                      isBackground: true,
+                                    ),
+                                  ),
+                                );
+                              },
                             ),
 
                           // Top interactive card
@@ -408,11 +569,15 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                             onPanStart: _onPanStart,
                             onPanUpdate: _onPanUpdate,
                             onPanEnd: _onPanEnd,
-                            onTap: () => _showProfileDetails(currentCard),
+                            onTap: () {
+                              if (!_isAnimating) {
+                                _showProfileDetails(currentCard);
+                              }
+                            },
                             child: Transform.translate(
                               offset: _dragOffset,
                               child: Transform.rotate(
-                                angle: (_dragOffset.dx / 300) * (math.pi / 12),
+                                angle: (_dragOffset.dx / 320) * 0.35,
                                 child: Stack(
                                   children: [
                                     _buildCardWidget(
@@ -451,7 +616,9 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                         ? BauhausColors.foreground
                         : Colors.grey.shade400,
                     size: 46,
-                    onTap: discover.canRewind ? _triggerRewind : null,
+                    onTap: discover.canRewind && !_isAnimating
+                        ? _triggerRewind
+                        : null,
                   ),
                   // Pass (X)
                   _buildActionButton(
@@ -459,7 +626,9 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                     color: BauhausColors.surface,
                     iconColor: BauhausColors.foreground,
                     size: 58,
-                    onTap: currentCard != null ? _triggerPass : null,
+                    onTap: currentCard != null && !_isAnimating
+                        ? _swipeLeftByButton
+                        : null,
                   ),
                   // Super Like (Star)
                   _buildActionButton(
@@ -467,7 +636,9 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                     color: BauhausColors.primaryYellow,
                     iconColor: BauhausColors.foreground,
                     size: 50,
-                    onTap: currentCard != null ? _triggerSuperLike : null,
+                    onTap: currentCard != null && !_isAnimating
+                        ? _swipeUpByButton
+                        : null,
                   ),
                   // Like (Heart)
                   _buildActionButton(
@@ -475,7 +646,9 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                     color: BauhausColors.primaryRed,
                     iconColor: Colors.white,
                     size: 58,
-                    onTap: currentCard != null ? _triggerLike : null,
+                    onTap: currentCard != null && !_isAnimating
+                        ? _swipeRightByButton
+                        : null,
                   ),
                 ],
               ),
@@ -493,103 +666,106 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
     required double size,
     VoidCallback? onTap,
   }) {
-    return GestureDetector(
+    return _TactileCircleButton(
+      icon: icon,
+      color: color,
+      iconColor: iconColor,
+      size: size,
       onTap: onTap,
-      child: Container(
-        width: size,
-        height: size,
-        decoration: BoxDecoration(
-          color: color,
-          shape: BoxShape.rectangle,
-          borderRadius: BorderRadius.zero,
-          border: Border.all(color: BauhausColors.border, width: 2.5),
-          boxShadow: onTap != null
-              ? const [
-                  BoxShadow(
-                    color: BauhausColors.border,
-                    offset: Offset(3, 3),
-                    blurRadius: 0,
-                  ),
-                ]
-              : null,
-        ),
-        child: Icon(icon, color: iconColor, size: size * 0.48),
-      ),
     );
   }
 
   Widget _buildStampOverlay() {
-    if (_dragOffset.dx > 60) {
+    final dx = _dragOffset.dx;
+    final dy = _dragOffset.dy;
+
+    final likeOpacity = ((dx - 15) / 80).clamp(0.0, 1.0);
+    final passOpacity = ((-dx - 15) / 80).clamp(0.0, 1.0);
+    final superLikeOpacity = ((-dy - 15) / 80).clamp(0.0, 1.0);
+
+    if (dx > 15 && dx.abs() >= -dy) {
       // LIKE STAMP
       return Positioned(
-        top: 30,
-        left: 30,
-        child: Transform.rotate(
-          angle: -math.pi / 10,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            decoration: BoxDecoration(
-              color: BauhausColors.primaryRed,
-              border: Border.all(color: BauhausColors.border, width: 3.0),
-              boxShadow: const [
-                BoxShadow(color: BauhausColors.border, offset: Offset(4, 4)),
-              ],
-            ),
-            child: Text(
-              'LIKE',
-              style: BauhausTextStyles.headlineLarge(
-                color: Colors.white,
-              ).copyWith(fontWeight: FontWeight.w900, letterSpacing: 2.0),
+        top: 28,
+        left: 24,
+        child: Opacity(
+          opacity: likeOpacity,
+          child: Transform.rotate(
+            angle: -math.pi / 12,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: BauhausColors.primaryRed,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: BauhausColors.border, width: 3.0),
+                boxShadow: const [
+                  BoxShadow(color: BauhausColors.border, offset: Offset(3, 3)),
+                ],
+              ),
+              child: Text(
+                'LIKE',
+                style: BauhausTextStyles.headlineLarge(
+                  color: Colors.white,
+                ).copyWith(fontWeight: FontWeight.w900, letterSpacing: 2.0),
+              ),
             ),
           ),
         ),
       );
-    } else if (_dragOffset.dx < -60) {
+    } else if (dx < -15 && dx.abs() >= -dy) {
       // PASS STAMP
       return Positioned(
-        top: 30,
-        right: 30,
-        child: Transform.rotate(
-          angle: math.pi / 10,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            decoration: BoxDecoration(
-              color: BauhausColors.foreground,
-              border: Border.all(color: Colors.white, width: 2.0),
-              boxShadow: const [
-                BoxShadow(color: BauhausColors.border, offset: Offset(4, 4)),
-              ],
-            ),
-            child: Text(
-              'PASS',
-              style: BauhausTextStyles.headlineLarge(
-                color: Colors.white,
-              ).copyWith(fontWeight: FontWeight.w900, letterSpacing: 2.0),
+        top: 28,
+        right: 24,
+        child: Opacity(
+          opacity: passOpacity,
+          child: Transform.rotate(
+            angle: math.pi / 12,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: BauhausColors.foreground,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.white, width: 2.5),
+                boxShadow: const [
+                  BoxShadow(color: BauhausColors.border, offset: Offset(3, 3)),
+                ],
+              ),
+              child: Text(
+                'PASS',
+                style: BauhausTextStyles.headlineLarge(
+                  color: Colors.white,
+                ).copyWith(fontWeight: FontWeight.w900, letterSpacing: 2.0),
+              ),
             ),
           ),
         ),
       );
-    } else if (_dragOffset.dy < -60) {
+    } else if (dy < -15 && -dy > dx.abs()) {
       // SUPER LIKE STAMP
       return Positioned(
-        top: 30,
+        top: 28,
         left: 0,
         right: 0,
         child: Center(
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            decoration: BoxDecoration(
-              color: BauhausColors.primaryYellow,
-              border: Border.all(color: BauhausColors.border, width: 3.0),
-              boxShadow: const [
-                BoxShadow(color: BauhausColors.border, offset: Offset(4, 4)),
-              ],
-            ),
-            child: Text(
-              '★ SUPER LIKE ★',
-              style: BauhausTextStyles.headlineMedium(
-                color: BauhausColors.foreground,
-              ).copyWith(fontWeight: FontWeight.w900),
+          child: Opacity(
+            opacity: superLikeOpacity,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+              decoration: BoxDecoration(
+                color: BauhausColors.primaryYellow,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: BauhausColors.border, width: 3.0),
+                boxShadow: const [
+                  BoxShadow(color: BauhausColors.border, offset: Offset(3, 3)),
+                ],
+              ),
+              child: Text(
+                '★ SUPER LIKE ★',
+                style: BauhausTextStyles.headlineMedium(
+                  color: BauhausColors.foreground,
+                ).copyWith(fontWeight: FontWeight.w900),
+              ),
             ),
           ),
         ),
@@ -602,167 +778,176 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
     StudentProfile profile, {
     required bool isBackground,
   }) {
+    const cardRadius = 24.0;
+    const innerRadius = 20.5;
+
     return Container(
       decoration: BoxDecoration(
         color: BauhausColors.surface,
-        borderRadius: BorderRadius.zero,
+        borderRadius: BorderRadius.circular(cardRadius),
         border: Border.all(color: BauhausColors.border, width: 3.5),
         boxShadow: isBackground
             ? const [
                 BoxShadow(color: BauhausColors.border, offset: Offset(2, 2)),
               ]
             : const [
-                BoxShadow(color: BauhausColors.border, offset: Offset(6, 6)),
+                BoxShadow(color: BauhausColors.border, offset: Offset(5, 5)),
               ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Photo Frame
-          Expanded(
-            flex: 6,
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                Image.network(
-                  profile.photos.isNotEmpty ? profile.photos.first : '',
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) => Container(
-                    color: BauhausColors.cardYellow,
-                    child: const Center(
-                      child: Icon(
-                        Icons.school,
-                        size: 80,
-                        color: BauhausColors.foreground,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(innerRadius),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Photo Frame
+            Expanded(
+              flex: 6,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  Image.network(
+                    profile.photos.isNotEmpty ? profile.photos.first : '',
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) => Container(
+                      color: BauhausColors.cardYellow,
+                      child: const Center(
+                        child: Icon(
+                          Icons.school,
+                          size: 80,
+                          color: BauhausColors.foreground,
+                        ),
                       ),
                     ),
                   ),
-                ),
-                // Top Badges
-                Positioned(
-                  top: 12,
-                  left: 12,
-                  child: Row(
-                    children: [
-                      BauhausBadge(
-                        label: profile.faculty,
-                        variant: BauhausBadgeVariant.red,
-                        fontSize: 10,
+                  // Top Badges
+                  Positioned(
+                    top: 14,
+                    left: 14,
+                    child: Row(
+                      children: [
+                        BauhausBadge(
+                          label: profile.faculty,
+                          variant: BauhausBadgeVariant.red,
+                          fontSize: 10,
+                        ),
+                        const SizedBox(width: 6),
+                        BauhausBadge(
+                          label: '${profile.distanceKm} KM',
+                          variant: BauhausBadgeVariant.yellow,
+                          fontSize: 10,
+                          icon: const Icon(Icons.near_me, size: 10),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // Verified Badge
+                  if (profile.isVerifiedStudent)
+                    Positioned(
+                      top: 14,
+                      right: 14,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: BauhausColors.surface,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: BauhausColors.border,
+                            width: 2.0,
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.verified,
+                              size: 14,
+                              color: BauhausColors.primaryBlue,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              'VERIFIED',
+                              style: BauhausTextStyles.badge().copyWith(
+                                fontSize: 9,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                      const SizedBox(width: 6),
+                    ),
+                ],
+              ),
+            ),
+
+            // Information Bar
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: const BoxDecoration(
+                color: BauhausColors.surface,
+                border: Border(
+                  top: BorderSide(color: BauhausColors.border, width: 3.0),
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          '${profile.name}, ${profile.age}'.toUpperCase(),
+                          style: BauhausTextStyles.headlineMedium().copyWith(
+                            fontSize: 19,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
                       BauhausBadge(
-                        label: '${profile.distanceKm} KM',
-                        variant: BauhausBadgeVariant.yellow,
+                        label: profile.year,
+                        variant: BauhausBadgeVariant.blue,
                         fontSize: 10,
-                        icon: const Icon(Icons.near_me, size: 10),
                       ),
                     ],
                   ),
-                ),
-                // Verified Badge
-                if (profile.isVerifiedStudent)
-                  Positioned(
-                    top: 12,
-                    right: 12,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: BauhausColors.surface,
-                        border: Border.all(
-                          color: BauhausColors.border,
-                          width: 2.0,
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(
-                            Icons.verified,
-                            size: 14,
-                            color: BauhausColors.primaryBlue,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            'VERIFIED',
-                            style: BauhausTextStyles.badge().copyWith(
-                              fontSize: 9,
-                            ),
-                          ),
-                        ],
-                      ),
+                  const SizedBox(height: 6),
+                  Text(
+                    profile.bio,
+                    style: BauhausTextStyles.bodyMedium(
+                      color: Colors.grey.shade800,
                     ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
-              ],
-            ),
-          ),
-
-          // Information Bar
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: const BoxDecoration(
-              color: BauhausColors.surface,
-              border: Border(
-                top: BorderSide(color: BauhausColors.border, width: 3.0),
+                  const SizedBox(height: 10),
+                  // Common Interests / Interests Tags
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 4,
+                    children: profile.interests.take(3).map((interest) {
+                      final isCommon = profile.commonInterests.contains(
+                        interest,
+                      );
+                      return BauhausBadge(
+                        label: interest,
+                        variant: isCommon
+                            ? BauhausBadgeVariant.yellow
+                            : BauhausBadgeVariant.surface,
+                        fontSize: 9,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ],
               ),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        '${profile.name}, ${profile.age}'.toUpperCase(),
-                        style: BauhausTextStyles.headlineMedium().copyWith(
-                          fontSize: 19,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    BauhausBadge(
-                      label: profile.year,
-                      variant: BauhausBadgeVariant.blue,
-                      fontSize: 10,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  profile.bio,
-                  style: BauhausTextStyles.bodyMedium(
-                    color: Colors.grey.shade800,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 10),
-                // Common Interests / Interests Tags
-                Wrap(
-                  spacing: 6,
-                  runSpacing: 4,
-                  children: profile.interests.take(3).map((interest) {
-                    final isCommon = profile.commonInterests.contains(interest);
-                    return BauhausBadge(
-                      label: interest,
-                      variant: isCommon
-                          ? BauhausBadgeVariant.yellow
-                          : BauhausBadgeVariant.surface,
-                      fontSize: 9,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 6,
-                        vertical: 2,
-                      ),
-                    );
-                  }).toList(),
-                ),
-              ],
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -774,9 +959,10 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
           color: BauhausColors.surface,
+          borderRadius: BorderRadius.circular(24),
           border: Border.all(color: BauhausColors.border, width: 3.5),
           boxShadow: const [
-            BoxShadow(color: BauhausColors.border, offset: Offset(6, 6)),
+            BoxShadow(color: BauhausColors.border, offset: Offset(5, 5)),
           ],
         ),
         child: Column(
@@ -810,9 +996,10 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
         padding: const EdgeInsets.all(32),
         decoration: BoxDecoration(
           color: BauhausColors.surface,
+          borderRadius: BorderRadius.circular(24),
           border: Border.all(color: BauhausColors.border, width: 3.5),
           boxShadow: const [
-            BoxShadow(color: BauhausColors.border, offset: Offset(6, 6)),
+            BoxShadow(color: BauhausColors.border, offset: Offset(5, 5)),
           ],
         ),
         child: Column(
@@ -841,6 +1028,71 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
               style: BauhausTextStyles.bodyMedium(color: Colors.grey.shade700),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _TactileCircleButton extends StatefulWidget {
+  final IconData icon;
+  final Color color;
+  final Color iconColor;
+  final double size;
+  final VoidCallback? onTap;
+
+  const _TactileCircleButton({
+    required this.icon,
+    required this.color,
+    required this.iconColor,
+    required this.size,
+    this.onTap,
+  });
+
+  @override
+  State<_TactileCircleButton> createState() => _TactileCircleButtonState();
+}
+
+class _TactileCircleButtonState extends State<_TactileCircleButton> {
+  bool _isPressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final isEnabled = widget.onTap != null;
+    return GestureDetector(
+      onTapDown: isEnabled ? (_) => setState(() => _isPressed = true) : null,
+      onTapUp: isEnabled ? (_) => setState(() => _isPressed = false) : null,
+      onTapCancel: isEnabled ? () => setState(() => _isPressed = false) : null,
+      onTap: widget.onTap,
+      child: AnimatedScale(
+        scale: _isPressed ? 0.88 : 1.0,
+        duration: const Duration(milliseconds: 100),
+        curve: Curves.easeOutCubic,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 100),
+          width: widget.size,
+          height: widget.size,
+          decoration: BoxDecoration(
+            color: widget.color,
+            shape: BoxShape.circle,
+            border: Border.all(color: BauhausColors.border, width: 2.5),
+            boxShadow: isEnabled
+                ? [
+                    BoxShadow(
+                      color: BauhausColors.border,
+                      offset: _isPressed
+                          ? const Offset(1, 1)
+                          : const Offset(2.5, 3),
+                      blurRadius: 0,
+                    ),
+                  ]
+                : null,
+          ),
+          child: Icon(
+            widget.icon,
+            color: widget.iconColor,
+            size: widget.size * 0.48,
+          ),
         ),
       ),
     );

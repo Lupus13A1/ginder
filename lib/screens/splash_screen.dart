@@ -51,7 +51,10 @@ class _SplashScreenState extends State<SplashScreen>
     if (!auth.isOnboarded) {
       Navigator.of(context).pushReplacementNamed(AppRoutes.onboarding);
     } else if (auth.isAuthenticated) {
-      if (!auth.isProfileSetupComplete) {
+      // Gate: must verify email before accessing the app
+      if (!auth.isEmailVerified) {
+        Navigator.of(context).pushReplacementNamed(AppRoutes.emailVerification);
+      } else if (!auth.isProfileSetupComplete) {
         Navigator.of(context).pushReplacementNamed(AppRoutes.profileSetup);
       } else {
         Navigator.of(context).pushReplacementNamed(AppRoutes.home);

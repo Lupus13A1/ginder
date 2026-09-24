@@ -61,31 +61,30 @@ class _ReportUserDialogState extends State<ReportUserDialog> {
   Widget build(BuildContext context) {
     if (_submitted) {
       return BauhausDialog(
-        title: 'REPORT SUBMITTED',
-        headerColor: BauhausColors.primaryBlue,
+        title: 'Report Submitted',
+        headerColor: BauhausColors.success,
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: BauhausColors.cardYellow,
+                color: BauhausColors.success.withOpacity(0.1),
                 shape: BoxShape.circle,
-                border: Border.all(color: BauhausColors.border, width: 2.0),
               ),
               child: const Icon(
                 Icons.check,
                 size: 36,
-                color: BauhausColors.foreground,
+                color: BauhausColors.success,
               ),
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 16),
             Text(
-              'THANK YOU FOR KEEPING CAMPUS SAFE',
+              'Thank you for keeping campus safe',
               textAlign: TextAlign.center,
               style: BauhausTextStyles.title(),
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 8),
             Text(
               'Our student safety moderation team has received the report and taken action.',
               textAlign: TextAlign.center,
@@ -97,8 +96,8 @@ class _ReportUserDialogState extends State<ReportUserDialog> {
     }
 
     return BauhausDialog(
-      title: 'REPORT STUDENT',
-      headerColor: BauhausColors.primaryRed,
+      title: 'Report Student',
+      headerColor: BauhausColors.error,
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -106,10 +105,11 @@ class _ReportUserDialogState extends State<ReportUserDialog> {
           children: [
             // Student summary
             Container(
-              padding: const EdgeInsets.all(10),
+              padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: BauhausColors.background,
-                border: Border.all(color: BauhausColors.border, width: 2.0),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: BauhausColors.border, width: 1.0),
               ),
               child: Row(
                 children: [
@@ -119,19 +119,19 @@ class _ReportUserDialogState extends State<ReportUserDialog> {
                         : null,
                     initial: widget.reportedStudent.nickname[0],
                     size: 40,
-                    isCircle: false,
+                    isCircle: true,
                     backgroundColor: BauhausColors.primaryBlue,
-                    borderWidth: 1.5,
+                    borderWidth: 1.0,
                   ),
-                  const SizedBox(width: 10),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          widget.reportedStudent.name.toUpperCase(),
+                          widget.reportedStudent.name,
                           style: BauhausTextStyles.title().copyWith(
-                            fontSize: 13,
+                            fontSize: 14,
                           ),
                         ),
                         Text(
@@ -145,26 +145,29 @@ class _ReportUserDialogState extends State<ReportUserDialog> {
               ),
             ),
 
-            const SizedBox(height: 14),
-            Text('SELECT REASON:', style: BauhausTextStyles.badge()),
-            const SizedBox(height: 6),
+            const SizedBox(height: 16),
+            Text('Select Reason:', style: BauhausTextStyles.badge()),
+            const SizedBox(height: 8),
             ..._reasons.map((r) {
               final isSelected = _selectedReason == r;
               return GestureDetector(
                 onTap: () => setState(() => _selectedReason = r),
                 child: Container(
-                  margin: const EdgeInsets.only(bottom: 6),
+                  margin: const EdgeInsets.only(bottom: 8),
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 8,
+                    horizontal: 12,
+                    vertical: 10,
                   ),
                   decoration: BoxDecoration(
                     color: isSelected
                         ? BauhausColors.cardYellow
                         : BauhausColors.surface,
+                    borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: BauhausColors.border,
-                      width: isSelected ? 2.0 : 1.0,
+                      color: isSelected
+                          ? BauhausColors.primaryYellow
+                          : BauhausColors.border,
+                      width: 1.0,
                     ),
                   ),
                   child: Row(
@@ -173,17 +176,17 @@ class _ReportUserDialogState extends State<ReportUserDialog> {
                         isSelected
                             ? Icons.radio_button_checked
                             : Icons.radio_button_off,
-                        size: 16,
+                        size: 18,
                         color: isSelected
-                            ? BauhausColors.primaryRed
+                            ? BauhausColors.primaryYellow
                             : BauhausColors.foreground,
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: 10),
                       Expanded(
                         child: Text(
                           r,
                           style: BauhausTextStyles.bodyMedium().copyWith(
-                            fontSize: 12,
+                            fontSize: 13,
                             fontWeight: isSelected
                                 ? FontWeight.bold
                                 : FontWeight.normal,
@@ -196,28 +199,35 @@ class _ReportUserDialogState extends State<ReportUserDialog> {
               );
             }),
 
-            const SizedBox(height: 10),
+            const SizedBox(height: 12),
             Text(
-              'ADDITIONAL DETAILS (OPTIONAL):',
+              'Additional Details (Optional):',
               style: BauhausTextStyles.badge(),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 6),
             TextField(
               controller: _detailsController,
               maxLines: 2,
               style: BauhausTextStyles.bodyMedium(
                 color: BauhausColors.foreground,
               ),
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 hintText: 'Describe the incident or behavior...',
                 filled: true,
                 fillColor: BauhausColors.background,
-                contentPadding: EdgeInsets.all(10),
+                contentPadding: const EdgeInsets.all(12),
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.zero,
-                  borderSide: BorderSide(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(
                     color: BauhausColors.border,
-                    width: 2.0,
+                    width: 1.0,
+                  ),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(
+                    color: BauhausColors.border,
+                    width: 1.0,
                   ),
                 ),
               ),

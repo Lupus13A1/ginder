@@ -3,15 +3,15 @@ import 'package:google_fonts/google_fonts.dart';
 import 'bauhaus_colors.dart';
 import 'bauhaus_text_styles.dart';
 
-/// Bauhaus application ThemeData configuration
+/// Premium application ThemeData configuration
 abstract final class BauhausTheme {
   static ThemeData get themeData {
-    final baseTextTheme = GoogleFonts.outfitTextTheme();
+    final baseTextTheme = GoogleFonts.interTextTheme();
 
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.light,
-      primaryColor: BauhausColors.primaryRed,
+      primaryColor: BauhausColors.primaryBlue,
       scaffoldBackgroundColor: BauhausColors.background,
       canvasColor: BauhausColors.background,
       dividerColor: BauhausColors.border,
@@ -26,13 +26,13 @@ abstract final class BauhausTheme {
       ),
       colorScheme: const ColorScheme(
         brightness: Brightness.light,
-        primary: BauhausColors.primaryRed,
+        primary: BauhausColors.primaryBlue,
         onPrimary: Colors.white,
-        secondary: BauhausColors.primaryBlue,
+        secondary: BauhausColors.primaryRed,
         onSecondary: Colors.white,
         tertiary: BauhausColors.primaryYellow,
         onTertiary: BauhausColors.foreground,
-        error: BauhausColors.primaryRed,
+        error: BauhausColors.error,
         onError: Colors.white,
         surface: BauhausColors.surface,
         onSurface: BauhausColors.foreground,
@@ -41,52 +41,59 @@ abstract final class BauhausTheme {
         backgroundColor: BauhausColors.surface,
         foregroundColor: BauhausColors.foreground,
         elevation: 0,
-        centerTitle: false,
+        centerTitle: true,
         titleTextStyle: BauhausTextStyles.headlineMedium(),
         shape: const Border(
-          bottom: BorderSide(color: BauhausColors.border, width: 3.0),
+          bottom: BorderSide(color: BauhausColors.border, width: 1.0),
         ),
       ),
       dividerTheme: const DividerThemeData(
         color: BauhausColors.border,
-        thickness: 3.0,
-        space: 3.0,
+        thickness: 1.0,
+        space: 1.0,
       ),
-      dialogTheme: const DialogThemeData(
+      dialogTheme: DialogThemeData(
         backgroundColor: BauhausColors.surface,
-        elevation: 0,
+        elevation: 10,
+        shadowColor: Colors.black12,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.zero,
-          side: BorderSide(color: BauhausColors.border, width: 3.5),
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: BauhausColors.border, width: 1.0),
         ),
       ),
       bottomSheetTheme: const BottomSheetThemeData(
         backgroundColor: BauhausColors.surface,
-        elevation: 0,
+        elevation: 10,
+        shadowColor: Colors.black12,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.zero,
-          side: BorderSide(color: BauhausColors.border, width: 3.5),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
         ),
       ),
-      inputDecorationTheme: const InputDecorationTheme(
+      inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: BauhausColors.surface,
-        contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 16,
+        ),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.zero,
-          borderSide: BorderSide(color: BauhausColors.border, width: 2.0),
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: BauhausColors.border, width: 1.0),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.zero,
-          borderSide: BorderSide(color: BauhausColors.border, width: 2.0),
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: BauhausColors.border, width: 1.0),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.zero,
-          borderSide: BorderSide(color: BauhausColors.primaryBlue, width: 3.0),
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(
+            color: BauhausColors.primaryBlue,
+            width: 2.0,
+          ),
         ),
         errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.zero,
-          borderSide: BorderSide(color: BauhausColors.primaryRed, width: 2.5),
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: BauhausColors.error, width: 1.0),
         ),
       ),
     );

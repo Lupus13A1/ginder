@@ -10,6 +10,8 @@ import 'routes/app_routes.dart';
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter/foundation.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'firebase_options.dart';
 
 void main() async {
@@ -22,6 +24,11 @@ void main() async {
   }
 
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  // Initialize Google Sign-In (required for google_sign_in v7+)
+  if (!kIsWeb) {
+    await GoogleSignIn.instance.initialize(hostedDomain: 'email.kmutnb.ac.th');
+  }
 
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(

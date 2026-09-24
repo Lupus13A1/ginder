@@ -66,17 +66,11 @@ class _BauhausTextFieldState extends State<BauhausTextField> {
         if (widget.label != null) ...[
           Row(
             children: [
-              Container(
-                width: 8,
-                height: 8,
-                color: BauhausColors.primaryRed,
-                margin: const EdgeInsets.only(right: 6),
-              ),
               Text(
-                widget.label!.toUpperCase(),
+                widget.label!,
                 style: BauhausTextStyles.badge(
                   color: BauhausColors.foreground,
-                ).copyWith(fontWeight: FontWeight.w900, fontSize: 12),
+                ).copyWith(fontWeight: FontWeight.w600, fontSize: 13),
               ),
             ],
           ),
@@ -119,33 +113,39 @@ class _BauhausTextFieldState extends State<BauhausTextField> {
                         setState(() => _obscureText = !_obscureText),
                   )
                 : widget.suffixIcon,
-            border: const OutlineInputBorder(
-              borderRadius: BorderRadius.zero,
-              borderSide: BorderSide(color: BauhausColors.border, width: 2.0),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(
+                color: BauhausColors.border,
+                width: 1.0,
+              ),
             ),
-            enabledBorder: const OutlineInputBorder(
-              borderRadius: BorderRadius.zero,
-              borderSide: BorderSide(color: BauhausColors.border, width: 2.0),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(
+                color: BauhausColors.border,
+                width: 1.0,
+              ),
             ),
-            focusedBorder: const OutlineInputBorder(
-              borderRadius: BorderRadius.zero,
-              borderSide: BorderSide(
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(
                 color: BauhausColors.primaryBlue,
-                width: 3.0,
+                width: 2.0,
               ),
             ),
-            errorBorder: const OutlineInputBorder(
-              borderRadius: BorderRadius.zero,
-              borderSide: BorderSide(
-                color: BauhausColors.primaryRed,
-                width: 2.5,
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(
+                color: BauhausColors.error,
+                width: 1.0,
               ),
             ),
-            focusedErrorBorder: const OutlineInputBorder(
-              borderRadius: BorderRadius.zero,
-              borderSide: BorderSide(
-                color: BauhausColors.primaryRed,
-                width: 3.0,
+            focusedErrorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(
+                color: BauhausColors.error,
+                width: 2.0,
               ),
             ),
           ),

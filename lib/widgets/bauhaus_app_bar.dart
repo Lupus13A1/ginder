@@ -69,18 +69,15 @@ class BauhausAppBar extends StatelessWidget implements PreferredSizeWidget {
         Navigator.of(context).canPop()) {
       effectiveLeading = IconButton(
         icon: Container(
-          padding: const EdgeInsets.all(6),
+          padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: backgroundColor == BauhausColors.surface
-                ? BauhausColors.cardYellow
-                : BauhausColors.surface,
-            shape: BoxShape.rectangle,
-            borderRadius: BorderRadius.zero,
-            border: Border.all(color: BauhausColors.border, width: 2.0),
+            color: BauhausColors.surface,
+            shape: BoxShape.circle,
+            border: Border.all(color: BauhausColors.border, width: 1.0),
           ),
           child: const Icon(
             Icons.arrow_back,
-            size: 18,
+            size: 20,
             color: BauhausColors.foreground,
           ),
         ),
@@ -94,7 +91,7 @@ class BauhausAppBar extends StatelessWidget implements PreferredSizeWidget {
         border: Border(
           bottom: BorderSide(
             color: BauhausColors.border,
-            width: bottomBorderWidth,
+            width: bottomBorderWidth == 3.0 ? 1.0 : bottomBorderWidth,
           ),
         ),
       ),
@@ -109,16 +106,12 @@ class BauhausAppBar extends StatelessWidget implements PreferredSizeWidget {
                 effectiveLeading,
                 const SizedBox(width: 8),
               ],
-              if (showBrandMark) ...[
-                const GeometricBrandMark(size: 12, spacing: 5),
-                const SizedBox(width: 10),
-              ],
               Expanded(
                 child: Text(
-                  title.toUpperCase(),
+                  title,
                   style: BauhausTextStyles.title(
                     color: foregroundColor,
-                  ).copyWith(fontWeight: FontWeight.w900, letterSpacing: 0.5),
+                  ).copyWith(fontWeight: FontWeight.w600),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),

@@ -28,17 +28,15 @@ class NotificationsScreen extends StatelessWidget {
               decoration: const BoxDecoration(
                 color: BauhausColors.surface,
                 border: Border(
-                  bottom: BorderSide(color: BauhausColors.border, width: 3.0),
+                  bottom: BorderSide(color: BauhausColors.border, width: 1.0),
                 ),
               ),
               child: Row(
                 children: [
-                  const GeometricBrandMark(size: 13, spacing: 5),
-                  const SizedBox(width: 10),
                   Text(
-                    'NOTIFICATIONS',
+                    'Notifications',
                     style: BauhausTextStyles.headlineMedium().copyWith(
-                      letterSpacing: 1.0,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                   const Spacer(),
@@ -47,21 +45,22 @@ class NotificationsScreen extends StatelessWidget {
                       onTap: () => notifProvider.markAllAsRead(),
                       child: Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
+                          horizontal: 12,
+                          vertical: 6,
                         ),
                         decoration: BoxDecoration(
-                          color: BauhausColors.cardYellow,
+                          color: BauhausColors.surface,
+                          borderRadius: BorderRadius.circular(16),
                           border: Border.all(
                             color: BauhausColors.border,
-                            width: 1.5,
+                            width: 1.0,
                           ),
                         ),
                         child: Text(
-                          'MARK READ',
+                          'Mark Read',
                           style: BauhausTextStyles.badge(
                             color: BauhausColors.foreground,
-                          ).copyWith(fontSize: 10),
+                          ).copyWith(fontSize: 12),
                         ),
                       ),
                     ),
@@ -71,50 +70,48 @@ class NotificationsScreen extends StatelessWidget {
 
             // Category Filter Tabs
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               color: BauhausColors.surface,
-              child: Row(
-                children: categories.map((cat) {
-                  final isSelected = notifProvider.selectedCategory == cat;
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 8.0),
-                    child: GestureDetector(
-                      onTap: () => notifProvider.setCategory(cat),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: isSelected
-                              ? BauhausColors.primaryRed
-                              : BauhausColors.background,
-                          borderRadius: BorderRadius.zero,
-                          border: Border.all(
-                            color: BauhausColors.border,
-                            width: 2.0,
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: categories.map((cat) {
+                    final isSelected = notifProvider.selectedCategory == cat;
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 8.0),
+                      child: GestureDetector(
+                        onTap: () => notifProvider.setCategory(cat),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
                           ),
-                          boxShadow: isSelected
-                              ? const [
-                                  BoxShadow(
-                                    color: BauhausColors.border,
-                                    offset: Offset(2, 2),
-                                  ),
-                                ]
-                              : null,
-                        ),
-                        child: Text(
-                          cat,
-                          style: BauhausTextStyles.badge(
+                          decoration: BoxDecoration(
                             color: isSelected
-                                ? Colors.white
-                                : BauhausColors.foreground,
-                          ).copyWith(fontSize: 10),
+                                ? BauhausColors.primaryBlue
+                                : BauhausColors.surface,
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: isSelected
+                                  ? BauhausColors.primaryBlue
+                                  : BauhausColors.border,
+                              width: 1.0,
+                            ),
+                          ),
+                          child: Text(
+                            cat,
+                            style: BauhausTextStyles.badge(
+                              color: isSelected
+                                  ? Colors.white
+                                  : BauhausColors.foreground,
+                            ).copyWith(fontSize: 12),
+                          ),
                         ),
                       ),
-                    ),
-                  );
-                }).toList(),
+                    );
+                  }).toList(),
+                ),
               ),
             ),
 
@@ -156,41 +153,40 @@ class NotificationsScreen extends StatelessWidget {
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
         decoration: BoxDecoration(
-          color: item.isRead ? BauhausColors.surface : BauhausColors.cardYellow,
-          borderRadius: BorderRadius.zero,
-          border: Border.all(color: BauhausColors.border, width: 2.5),
-          boxShadow: const [
+          color: BauhausColors.surface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: item.isRead
+                ? BauhausColors.border
+                : item.categoryColor.withOpacity(0.5),
+            width: 1.0,
+          ),
+          boxShadow: [
             BoxShadow(
-              color: BauhausColors.border,
-              offset: Offset(3, 3),
-              blurRadius: 0,
+              color: item.isRead
+                  ? Colors.black.withOpacity(0.02)
+                  : item.categoryColor.withOpacity(0.1),
+              offset: const Offset(0, 4),
+              blurRadius: 12,
             ),
           ],
         ),
         child: Padding(
-          padding: const EdgeInsets.all(12.0),
+          padding: const EdgeInsets.all(16.0),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Geometric category box icon
+              // Circular icon
               Container(
-                width: 42,
-                height: 42,
+                width: 44,
+                height: 44,
                 decoration: BoxDecoration(
-                  color: item.categoryColor,
-                  border: Border.all(color: BauhausColors.border, width: 2.0),
+                  color: item.categoryColor.withOpacity(0.1),
+                  shape: BoxShape.circle,
                 ),
-                child: Icon(
-                  item.iconData,
-                  size: 20,
-                  color:
-                      item.categoryColor == BauhausColors.cardYellow ||
-                          item.categoryColor == BauhausColors.primaryYellow
-                      ? BauhausColors.foreground
-                      : Colors.white,
-                ),
+                child: Icon(item.iconData, size: 22, color: item.categoryColor),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 16),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -200,9 +196,12 @@ class NotificationsScreen extends StatelessWidget {
                       children: [
                         Expanded(
                           child: Text(
-                            item.title.toUpperCase(),
+                            item.title,
                             style: BauhausTextStyles.title().copyWith(
-                              fontSize: 12,
+                              fontSize: 14,
+                              fontWeight: item.isRead
+                                  ? FontWeight.w500
+                                  : FontWeight.w700,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -212,13 +211,10 @@ class NotificationsScreen extends StatelessWidget {
                           Container(
                             width: 8,
                             height: 8,
+                            margin: const EdgeInsets.only(left: 8),
                             decoration: BoxDecoration(
-                              color: BauhausColors.primaryRed,
+                              color: item.categoryColor,
                               shape: BoxShape.circle,
-                              border: Border.all(
-                                color: BauhausColors.border,
-                                width: 1.0,
-                              ),
                             ),
                           ),
                       ],

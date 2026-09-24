@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import '../models/student_profile.dart';
 import '../services/database_service.dart';
 
@@ -48,6 +49,7 @@ class AuthProvider extends ChangeNotifier {
 
   StudentProfile get currentUser => _currentUser;
   bool get isAuthenticated => _auth.currentUser != null;
+  bool get isEmailVerified => _auth.currentUser?.emailVerified ?? false;
   bool get isOnboarded => true;
   bool get isProfileSetupComplete =>
       _isProfileSetupComplete && _currentUser.photos.isNotEmpty;
@@ -66,17 +68,46 @@ class AuthProvider extends ChangeNotifier {
     return email.trim().toLowerCase().endsWith('@email.kmutnb.ac.th');
   }
 
+  /// Resend verification email for the currently signed-in user.
+  Future<void> resendVerificationEmail() async {
+    final user = _auth.currentUser;
+    if (user == null) {
+      throw 'No user is currently signed in.';
+    }
+    if (user.emailVerified) {
+      throw 'Email is already verified.';
+    }
+    try {
+      await user.sendEmailVerification();
+    } on FirebaseAuthException catch (e) {
+      throw e.message ?? 'Failed to send verification email.';
+    }
+  }
+
+  /// Reload the current user from Firebase to refresh emailVerified status.
+  Future<bool> reloadUser() async {
+    final user = _auth.currentUser;
+    if (user == null) return false;
+    await user.reload();
+    notifyListeners();
+    return _auth.currentUser?.emailVerified ?? false;
+  }
+
   Future<void> login({required String email, required String password}) async {
+    if (!_isValidEmailDomain(email)) {
+      throw 'Access restricted. Please use your @email.kmutnb.ac.th student email.';
+    }
+
     try {
       UserCredential cred = await _auth.signInWithEmailAndPassword(
         email: email,
         password: password,
       );
 
-      // if (!cred.user!.emailVerified) {
-      //   await _auth.signOut();
-      //   throw 'Please check your inbox and click the verification link before logging in.';
-      // }
+      if (!cred.user!.emailVerified) {
+        // Don't sign out — let the user land on the verification screen
+        throw 'EMAIL_NOT_VERIFIED';
+      }
 
       await _fetchUserProfile(cred.user!.uid);
     } on FirebaseAuthException catch (e) {
@@ -150,18 +181,37 @@ class AuthProvider extends ChangeNotifier {
       if (kIsWeb) {
         cred = await _auth.signInWithPopup(googleProvider);
       } else {
-        // On mobile, this will open a secure webview for Google Auth
-        cred = await _auth.signInWithProvider(googleProvider);
+        // Use native Google Sign-In on mobile for faster performance
+        final googleSignIn = GoogleSignIn.instance;
+
+        final GoogleSignInAccount googleUser = await googleSignIn
+            .authenticate();
+
+        final GoogleSignInAuthentication googleAuth = googleUser.authentication;
+
+        final AuthCredential credential = GoogleAuthProvider.credential(
+          idToken: googleAuth.idToken,
+        );
+
+        cred = await _auth.signInWithCredential(credential);
       }
 
       final email = cred.user!.email ?? '';
 
-      // Domain check bypassed for testing
-      // if (!_isValidEmailDomain(email)) {
-      //   await cred.user!.delete();
-      //   await logout();
-      //   throw 'Access denied. You must use an @email.kmutnb.ac.th account.';
-      // }
+      // Server-side domain check — the `hd` parameter can be bypassed,
+      // so we must verify the returned email domain ourselves.
+      if (!_isValidEmailDomain(email)) {
+        await cred.user!.delete();
+        await logout();
+        throw 'Access denied. You must use an @email.kmutnb.ac.th account.';
+      }
+
+      // Check email verified status from the OAuth provider.
+      // Google accounts with verified emails are trusted by Firebase,
+      // but we still enforce the check for consistency.
+      if (!(cred.user!.emailVerified)) {
+        throw 'EMAIL_NOT_VERIFIED';
+      }
 
       String uid = cred.user!.uid;
       final existingData = await _db.getUserProfile(uid);
@@ -259,6 +309,13 @@ class AuthProvider extends ChangeNotifier {
 
   Future<void> logout() async {
     await _auth.signOut();
+    if (!kIsWeb) {
+      try {
+        await GoogleSignIn.instance.signOut();
+      } catch (e) {
+        debugPrint('Error signing out of Google: $e');
+      }
+    }
     _currentUser = StudentProfile.currentUser; // reset to default
     notifyListeners();
   }

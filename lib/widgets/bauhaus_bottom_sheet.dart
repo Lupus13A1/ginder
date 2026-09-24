@@ -46,12 +46,7 @@ class BauhausBottomSheet extends StatelessWidget {
     return Container(
       decoration: const BoxDecoration(
         color: BauhausColors.surface,
-        borderRadius: BorderRadius.zero,
-        border: Border(
-          top: BorderSide(color: BauhausColors.border, width: 3.5),
-          left: BorderSide(color: BauhausColors.border, width: 3.5),
-          right: BorderSide(color: BauhausColors.border, width: 3.5),
-        ),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       child: SafeArea(
         top: false,
@@ -62,54 +57,57 @@ class BauhausBottomSheet extends StatelessWidget {
             // Handle
             Center(
               child: Container(
-                margin: const EdgeInsets.only(top: 10, bottom: 6),
-                width: 48,
-                height: 6,
-                decoration: const BoxDecoration(
+                margin: const EdgeInsets.only(top: 12, bottom: 4),
+                width: 40,
+                height: 5,
+                decoration: BoxDecoration(
                   color: BauhausColors.border,
-                  borderRadius: BorderRadius.zero,
+                  borderRadius: BorderRadius.circular(10),
                 ),
               ),
             ),
             // Header
             Container(
               padding: const EdgeInsets.symmetric(
-                horizontal: 16.0,
-                vertical: 12.0,
+                horizontal: 20.0,
+                vertical: 16.0,
               ),
               decoration: BoxDecoration(
-                color: headerColor,
+                color: headerColor == BauhausColors.primaryYellow
+                    ? BauhausColors.surface
+                    : headerColor,
                 border: const Border(
-                  top: BorderSide(color: BauhausColors.border, width: 2.0),
-                  bottom: BorderSide(color: BauhausColors.border, width: 2.5),
+                  bottom: BorderSide(color: BauhausColors.border, width: 1.0),
+                ),
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(24),
                 ),
               ),
               child: Row(
                 children: [
                   Expanded(
                     child: Text(
-                      title.toUpperCase(),
+                      title,
                       style: BauhausTextStyles.title(
-                        color: headerTextColor,
-                      ).copyWith(fontWeight: FontWeight.w900),
+                        color: headerColor == BauhausColors.primaryYellow
+                            ? BauhausColors.foreground
+                            : headerTextColor,
+                      ).copyWith(fontWeight: FontWeight.w600),
                     ),
                   ),
-                  ?trailing,
+                  if (trailing != null) trailing!,
                   const SizedBox(width: 8),
                   GestureDetector(
                     onTap: () => Navigator.of(context).pop(),
                     child: Container(
-                      padding: const EdgeInsets.all(3),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        border: Border.all(
-                          color: BauhausColors.border,
-                          width: 1.5,
-                        ),
+                      padding: const EdgeInsets.all(4),
+                      decoration: const BoxDecoration(
+                        color: BauhausColors.muted,
+                        shape: BoxShape.circle,
                       ),
                       child: const Icon(
                         Icons.close,
-                        size: 16,
+                        size: 18,
                         color: BauhausColors.foreground,
                       ),
                     ),

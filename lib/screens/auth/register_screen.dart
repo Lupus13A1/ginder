@@ -132,12 +132,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(e.toString()),
-            backgroundColor: BauhausColors.primaryRed,
-          ),
-        );
+        if (e.toString() == 'EMAIL_NOT_VERIFIED') {
+          Navigator.of(
+            context,
+          ).pushReplacementNamed(AppRoutes.emailVerification);
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(e.toString()),
+              backgroundColor: BauhausColors.primaryRed,
+            ),
+          );
+        }
       }
     } finally {
       if (mounted) {

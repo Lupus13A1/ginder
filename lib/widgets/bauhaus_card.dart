@@ -143,24 +143,19 @@ class _BauhausCardState extends State<BauhausCard> {
         ),
         decoration: BoxDecoration(
           color: widget.backgroundColor,
-          borderRadius: BorderRadius.zero,
+          borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: BauhausColors.border,
-            width: widget.borderWidth,
+            color: BauhausColors.border.withOpacity(0.5),
+            width: 1.0,
           ),
           boxShadow: _isPressed
-              ? [
-                  const BoxShadow(
-                    color: BauhausColors.border,
-                    offset: Offset(1, 1),
-                    blurRadius: 0,
-                  ),
-                ]
+              ? []
               : [
                   BoxShadow(
-                    color: BauhausColors.border,
-                    offset: Offset(widget.shadowOffset, widget.shadowOffset),
-                    blurRadius: 0,
+                    color: Colors.black.withOpacity(0.04),
+                    offset: const Offset(0, 4),
+                    blurRadius: 12,
+                    spreadRadius: 0,
                   ),
                 ],
         ),

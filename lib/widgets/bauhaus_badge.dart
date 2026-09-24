@@ -76,8 +76,15 @@ class BauhausBadge extends StatelessWidget {
       padding: padding,
       decoration: BoxDecoration(
         color: bgColor,
-        borderRadius: isPill ? BorderRadius.circular(999) : BorderRadius.zero,
-        border: Border.all(color: BauhausColors.border, width: borderWidth),
+        borderRadius: isPill
+            ? BorderRadius.circular(999)
+            : BorderRadius.circular(6),
+        border: borderWidth > 0
+            ? Border.all(
+                color: BauhausColors.border.withOpacity(0.5),
+                width: 1.0,
+              )
+            : null,
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -91,7 +98,7 @@ class BauhausBadge extends StatelessWidget {
             const SizedBox(width: 4),
           ],
           Text(
-            label.toUpperCase(),
+            label,
             style: BauhausTextStyles.badge(
               color: textColor,
             ).copyWith(fontSize: fontSize),

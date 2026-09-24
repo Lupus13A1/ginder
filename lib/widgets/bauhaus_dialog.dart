@@ -67,16 +67,16 @@ class BauhausDialog extends StatelessWidget {
       child: Container(
         decoration: BoxDecoration(
           color: BauhausColors.surface,
-          borderRadius: BorderRadius.zero,
-          border: Border.all(color: BauhausColors.border, width: 3.5),
-          boxShadow: const [
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
             BoxShadow(
-              color: BauhausColors.border,
-              offset: Offset(8, 8),
-              blurRadius: 0,
+              color: Colors.black.withOpacity(0.1),
+              offset: const Offset(0, 10),
+              blurRadius: 30,
             ),
           ],
         ),
+        clipBehavior: Clip.antiAlias,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -84,35 +84,36 @@ class BauhausDialog extends StatelessWidget {
             // Header Bar
             Container(
               padding: const EdgeInsets.symmetric(
-                horizontal: 16.0,
-                vertical: 12.0,
+                horizontal: 20.0,
+                vertical: 16.0,
               ),
-              color: headerColor,
+              color: headerColor == BauhausColors.primaryRed
+                  ? BauhausColors.surface
+                  : headerColor,
               child: Row(
                 children: [
-                  if (icon != null) ...[icon!, const SizedBox(width: 8)],
+                  if (icon != null) ...[icon!, const SizedBox(width: 10)],
                   Expanded(
                     child: Text(
-                      title.toUpperCase(),
+                      title,
                       style: BauhausTextStyles.title(
-                        color: headerTextColor,
-                      ).copyWith(fontWeight: FontWeight.w900),
+                        color: headerColor == BauhausColors.primaryRed
+                            ? BauhausColors.foreground
+                            : headerTextColor,
+                      ).copyWith(fontWeight: FontWeight.w600),
                     ),
                   ),
                   GestureDetector(
                     onTap: () => Navigator.of(context).pop(),
                     child: Container(
-                      padding: const EdgeInsets.all(3),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        border: Border.all(
-                          color: BauhausColors.border,
-                          width: 1.5,
-                        ),
+                      padding: const EdgeInsets.all(4),
+                      decoration: const BoxDecoration(
+                        color: BauhausColors.muted,
+                        shape: BoxShape.circle,
                       ),
                       child: const Icon(
                         Icons.close,
-                        size: 16,
+                        size: 18,
                         color: BauhausColors.foreground,
                       ),
                     ),

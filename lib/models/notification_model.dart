@@ -61,9 +61,9 @@ class NotificationItem {
       case NotificationType.likeReceived:
         return BauhausColors.primaryYellow;
       case NotificationType.campusEvent:
-        return BauhausColors.cardYellow;
+        return BauhausColors.success;
       case NotificationType.systemAlert:
-        return BauhausColors.foreground;
+        return BauhausColors.info;
     }
   }
 
