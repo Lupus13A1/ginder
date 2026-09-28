@@ -96,15 +96,23 @@ class _MatchScreenState extends State<MatchScreen>
                   const GeometricBrandMark(size: 14, spacing: 6),
                   Container(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
+                      horizontal: 12,
+                      vertical: 5,
                     ),
                     decoration: BoxDecoration(
                       color: BauhausColors.primaryRed,
+                      borderRadius: BorderRadius.circular(999),
                       border: Border.all(
                         color: BauhausColors.border,
-                        width: 2.0,
+                        width: 1.0,
                       ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.08),
+                          blurRadius: 4,
+                          offset: const Offset(0, 1),
+                        ),
+                      ],
                     ),
                     child: Text(
                       'CAMPUS MATCH',
@@ -156,12 +164,12 @@ class _MatchScreenState extends State<MatchScreen>
                             size: 105,
                             isCircle: true,
                             backgroundColor: BauhausColors.primaryBlue,
-                            borderWidth: 3.5,
-                            shadowOffset: 6.0,
+                            borderWidth: 2.0,
+                            shadowOffset: 0,
                             showVerifiedBadge: true,
                           ),
                         ),
-                        // Right Peer Avatar (Square)
+                        // Right Peer Avatar (Circle)
                         Positioned(
                           right: 10,
                           child: BauhausAvatar(
@@ -172,35 +180,36 @@ class _MatchScreenState extends State<MatchScreen>
                                 ? widget.peer.nickname[0]
                                 : 'P',
                             size: 105,
-                            isCircle: false,
+                            isCircle: true,
                             backgroundColor: BauhausColors.primaryYellow,
-                            borderWidth: 3.5,
-                            shadowOffset: 6.0,
+                            borderWidth: 2.0,
+                            shadowOffset: 0,
                             showVerifiedBadge: true,
                           ),
                         ),
                         // Center Heart / Geometric Badge
                         Center(
                           child: Container(
-                            padding: const EdgeInsets.all(8),
+                            padding: const EdgeInsets.all(10),
                             decoration: BoxDecoration(
                               color: BauhausColors.primaryRed,
                               shape: BoxShape.circle,
                               border: Border.all(
-                                color: BauhausColors.border,
-                                width: 2.5,
+                                color: Colors.white,
+                                width: 2.0,
                               ),
-                              boxShadow: const [
+                              boxShadow: [
                                 BoxShadow(
-                                  color: BauhausColors.border,
-                                  offset: Offset(2, 2),
+                                  color: Colors.black.withValues(alpha: 0.15),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 2),
                                 ),
                               ],
                             ),
                             child: const Icon(
                               Icons.favorite,
                               color: Colors.white,
-                              size: 24,
+                              size: 22,
                             ),
                           ),
                         ),
@@ -240,12 +249,13 @@ class _MatchScreenState extends State<MatchScreen>
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: BauhausColors.surface,
-                  borderRadius: BorderRadius.zero,
-                  border: Border.all(color: BauhausColors.border, width: 3.0),
-                  boxShadow: const [
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: BauhausColors.border, width: 1.0),
+                  boxShadow: [
                     BoxShadow(
-                      color: BauhausColors.border,
-                      offset: Offset(5, 5),
+                      color: Colors.black.withValues(alpha: 0.04),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
                     ),
                   ],
                 ),
@@ -271,16 +281,23 @@ class _MatchScreenState extends State<MatchScreen>
                       controller: _msgController,
                       maxLines: 2,
                       style: BauhausTextStyles.bodyMedium(),
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         filled: true,
                         fillColor: BauhausColors.background,
                         hintText: 'Write a quick hello...',
-                        contentPadding: EdgeInsets.all(12),
+                        contentPadding: const EdgeInsets.all(12),
                         border: OutlineInputBorder(
-                          borderRadius: BorderRadius.zero,
+                          borderRadius: BorderRadius.circular(12),
                           borderSide: BorderSide(
                             color: BauhausColors.border,
-                            width: 2.0,
+                            width: 1.0,
+                          ),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(
+                            color: BauhausColors.border,
+                            width: 1.0,
                           ),
                         ),
                       ),

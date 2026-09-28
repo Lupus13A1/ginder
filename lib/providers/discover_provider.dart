@@ -47,16 +47,26 @@ class DiscoverProvider extends ChangeNotifier {
   String get searchQuery => _searchQuery;
 
   List<StudentProfile> get _filteredProfiles {
+    final auth = FirebaseAuth.instance;
+    final authUid = auth.currentUser?.uid;
+    final authEmail = auth.currentUser?.email?.toLowerCase().trim();
+
     return _profiles.where((p) {
+      // 0. Crucial: Exclude current user by UID or Email
+      if (p.id == _currentUserId ||
+          (authUid != null && p.id == authUid) ||
+          (authEmail != null &&
+              authEmail.isNotEmpty &&
+              p.studentEmail.toLowerCase().trim() == authEmail)) {
+        return false;
+      }
+
       if (_selectedFaculty != 'All' &&
           !p.faculty.toLowerCase().contains(_selectedFaculty.toLowerCase())) {
         return false;
       }
       if (_selectedYear != 'All' &&
           !p.year.toLowerCase().contains(_selectedYear.toLowerCase())) {
-        return false;
-      }
-      if (p.distanceKm > _maxDistance) {
         return false;
       }
       if (_searchQuery.isNotEmpty) {
@@ -78,11 +88,13 @@ class DiscoverProvider extends ChangeNotifier {
   }
 
   Future<void> loadProfiles({String? uid, bool forceRefresh = false}) async {
-    if (uid != null && uid.isNotEmpty) {
+    final authUid = FirebaseAuth.instance.currentUser?.uid;
+    if (authUid != null && authUid.isNotEmpty) {
+      _currentUserId = authUid;
+    } else if (uid != null && uid.isNotEmpty && uid != 'my_user_id') {
       _currentUserId = uid;
-    }
-    if (_currentUserId.isEmpty) {
-      _currentUserId = FirebaseAuth.instance.currentUser?.uid ?? 'my_user_id';
+    } else if (_currentUserId.isEmpty || _currentUserId == 'my_user_id') {
+      _currentUserId = FirebaseAuth.instance.currentUser?.uid ?? '';
     }
 
     _isLoading = true;

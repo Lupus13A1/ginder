@@ -126,7 +126,7 @@ class NotificationItem {
       type: NotificationType.systemAlert,
       title: 'STUDENT IDENTITY VERIFIED',
       message:
-          'Your official university email has been verified. You have a verified student badge.',
+          'Your official email has been verified. You have a verified student badge.',
       timestamp: DateTime.now().subtract(const Duration(days: 3)),
       isRead: true,
     ),

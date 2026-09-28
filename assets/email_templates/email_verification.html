@@ -1,0 +1,315 @@
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Verify Your Campus Email - Ginder</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        background-color: #f8f9fa;
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
+          Arial, sans-serif;
+        color: #1e293b;
+        -webkit-font-smoothing: antialiased;
+      }
+      .wrapper {
+        width: 100%;
+        table-layout: fixed;
+        background-color: #f8f9fa;
+        padding: 40px 16px;
+      }
+      .main-table {
+        max-width: 580px;
+        margin: 0 auto;
+        background-color: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow:
+          0 4px 16px rgba(0, 0, 0, 0.04),
+          0 1px 3px rgba(0, 0, 0, 0.02);
+      }
+      .header-bar {
+        padding: 28px 32px 20px 32px;
+        background-color: #ffffff;
+        border-bottom: 1px solid #e2e8f0;
+      }
+      .brand-mark {
+        display: inline-block;
+        vertical-align: middle;
+      }
+      .brand-shape {
+        display: inline-block;
+        width: 12px;
+        height: 12px;
+        margin-right: 6px;
+        vertical-align: middle;
+      }
+      .brand-circle {
+        border-radius: 50%;
+        background-color: #e11d48;
+      }
+      .brand-square {
+        border-radius: 2px;
+        background-color: #4f46e5;
+      }
+      .brand-triangle {
+        width: 0;
+        height: 0;
+        border-left: 6px solid transparent;
+        border-right: 6px solid transparent;
+        border-bottom: 12px solid #f59e0b;
+        background: transparent;
+      }
+      .brand-text {
+        font-size: 20px;
+        font-weight: 800;
+        letter-spacing: 2px;
+        color: #1e293b;
+        display: inline-block;
+        vertical-align: middle;
+        margin-left: 6px;
+      }
+      .status-pill {
+        float: right;
+        padding: 5px 12px;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+        border-radius: 999px;
+        background-color: #fef3c7;
+        color: #b45309;
+        border: 1px solid #fde68a;
+        text-transform: uppercase;
+      }
+      .content-body {
+        padding: 36px 32px;
+      }
+      .hero-title {
+        font-size: 24px;
+        font-weight: 800;
+        color: #1e293b;
+        margin: 0 0 12px 0;
+        letter-spacing: -0.5px;
+        line-height: 1.25;
+      }
+      .hero-subtitle {
+        font-size: 15px;
+        line-height: 1.6;
+        color: #475569;
+        margin: 0 0 28px 0;
+      }
+      .email-highlight-box {
+        background-color: #f8f9fa;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 16px 20px;
+        margin-bottom: 28px;
+      }
+      .email-label {
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+        color: #64748b;
+        text-transform: uppercase;
+        margin-bottom: 4px;
+      }
+      .email-address {
+        font-size: 16px;
+        font-weight: 700;
+        color: #4f46e5;
+        word-break: break-all;
+      }
+      .action-button-container {
+        text-align: center;
+        margin: 32px 0;
+      }
+      .btn-verify {
+        display: inline-block;
+        background-color: #4f46e5;
+        color: #ffffff !important;
+        text-decoration: none;
+        font-size: 15px;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+        padding: 16px 36px;
+        border-radius: 12px;
+        border: 1px solid #4338ca;
+        box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25);
+        transition: all 0.2s ease;
+      }
+      .fallback-card {
+        background-color: #f8f9fa;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 16px;
+        margin-top: 24px;
+      }
+      .fallback-text {
+        font-size: 12px;
+        color: #64748b;
+        line-height: 1.5;
+        margin: 0 0 8px 0;
+      }
+      .fallback-link {
+        font-size: 11px;
+        color: #4f46e5;
+        word-break: break-all;
+        text-decoration: underline;
+      }
+      .security-notice {
+        border-left: 3px solid #f59e0b;
+        padding: 12px 16px;
+        background-color: #fffbeb;
+        border-radius: 0 8px 8px 0;
+        margin-top: 28px;
+      }
+      .security-notice p {
+        margin: 0;
+        font-size: 12px;
+        color: #92400e;
+        line-height: 1.5;
+      }
+      .footer {
+        padding: 24px 32px;
+        background-color: #f8f9fa;
+        border-top: 1px solid #e2e8f0;
+        text-align: center;
+      }
+      .footer-text {
+        font-size: 12px;
+        color: #94a3b8;
+        line-height: 1.6;
+        margin: 0;
+      }
+      .footer-badge {
+        display: inline-block;
+        margin-top: 8px;
+        font-size: 11px;
+        font-weight: 600;
+        color: #64748b;
+        letter-spacing: 0.5px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrapper">
+      <table
+        class="main-table"
+        width="100%"
+        cellpadding="0"
+        cellspacing="0"
+        border="0"
+        align="center"
+      >
+        <!-- Header -->
+        <tr>
+          <td class="header-bar">
+            <table width="100%" cellpadding="0" cellspacing="0" border="0">
+              <tr>
+                <td>
+                  <span class="brand-mark">
+                    <span class="brand-shape brand-circle"></span>
+                    <span class="brand-shape brand-square"></span>
+                    <span class="brand-shape brand-triangle"></span>
+                  </span>
+                  <span class="brand-text">GINDER</span>
+                </td>
+                <td align="right">
+                  <span class="status-pill">EMAIL VERIFICATION</span>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- Body Content -->
+        <tr>
+          <td class="content-body">
+            <h1 class="hero-title">
+              Welcome to GINDER! 👋<br />Please verify your university email
+            </h1>
+
+            <p class="hero-subtitle">
+              You registered a new account on
+              <strong>Ginder</strong>, the platform for connecting and making
+              friends across campus. To maintain campus security and
+              authenticity, please click the button below to verify your email
+              and activate your account.
+            </p>
+
+            <div class="email-highlight-box">
+              <div class="email-label">Student Account Email</div>
+              <div class="email-address">%EMAIL%</div>
+            </div>
+
+            <!-- Main Call To Action Button -->
+            <div class="action-button-container">
+              <!--[if mso]>
+                <v:roundrect
+                  xmlns:v="urn:schemas-microsoft-com:vml"
+                  xmlns:w="urn:schemas-microsoft-com:office:word"
+                  href="%LINK%"
+                  style="height: 50px; v-text-anchor: middle; width: 260px"
+                  arcsize="24%"
+                  strokecolor="#4338CA"
+                  fillcolor="#4F46E5"
+                >
+                  <w:anchorlock />
+                  <center
+                    style="
+                      color: #ffffff;
+                      font-family: sans-serif;
+                      font-size: 15px;
+                      font-weight: bold;
+                    "
+                  >
+                    VERIFY UNIVERSITY EMAIL
+                  </center>
+                </v:roundrect>
+              <![endif]-->
+              <!--[if !mso]><!-->
+              <a href="%LINK%" target="_blank" class="btn-verify"
+                >VERIFY UNIVERSITY EMAIL</a
+              >
+              <!--<![endif]-->
+            </div>
+
+            <div class="security-notice">
+              <p>
+                <strong>Security Notice:</strong>
+                This verification link is temporary and will expire soon. If you
+                did not sign up for Ginder, you can safely ignore this email.
+              </p>
+            </div>
+
+            <!-- Fallback URL -->
+            <div class="fallback-card">
+              <p class="fallback-text">
+                If the button above does not work, copy and paste the link below
+                into your web browser:
+              </p>
+              <a href="%LINK%" target="_blank" class="fallback-link">%LINK%</a>
+            </div>
+          </td>
+        </tr>
+
+        <!-- Footer -->
+        <tr>
+          <td class="footer">
+            <p class="footer-text">
+              © 2026 GINDER • BAUHAUS DESIGN SYSTEM<br />
+              King Mongkut's University of Technology North Bangkok (KMUTNB)<br />
+              Exclusive Community for Verified Students
+            </p>
+            <div class="footer-badge">
+              FORM FOLLOWS ATTRACTION • CAMPUS VERIFIED
+            </div>
+          </td>
+        </tr>
+      </table>
+    </div>
+  </body>
+</html>

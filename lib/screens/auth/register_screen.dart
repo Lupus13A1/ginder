@@ -6,6 +6,8 @@ import '../../widgets/bauhaus_shapes.dart';
 import '../../widgets/bauhaus_button.dart';
 import '../../widgets/bauhaus_card.dart';
 import '../../widgets/bauhaus_text_field.dart';
+import '../../widgets/bauhaus_dropdown.dart';
+import '../../widgets/bauhaus_snackbar.dart';
 import '../../providers/auth_provider.dart';
 import '../../routes/app_routes.dart';
 
@@ -19,31 +21,32 @@ class RegisterScreen extends StatefulWidget {
 }
 
 class _RegisterScreenState extends State<RegisterScreen> {
-  final _nameController = TextEditingController();
-  final _nicknameController = TextEditingController();
-  final _ageController = TextEditingController();
+  final _usernameController = TextEditingController();
+  final _majorController = TextEditingController();
+  final _dobController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  String _selectedFaculty = 'คณะวิศวกรรมศาสตร์ (Engineering)';
+  DateTime? _selectedDob;
+  String _selectedFaculty = 'Faculty of Engineering';
   String _selectedYear = 'Year 3 (Junior)';
 
   final List<String> _faculties = [
-    'คณะวิศวกรรมศาสตร์ (Engineering)',
-    'คณะสถาปัตยกรรมและการออกแบบ (Architecture and Design)',
-    'คณะเทคโนโลยีสารสนเทศและนวัตกรรมดิจิทัล (ITDI)',
-    'คณะวิทยาศาสตร์ประยุกต์ (Applied Science)',
-    'คณะครุศาสตร์อุตสาหกรรม (Technical Education)',
-    'วิทยาลัยเทคโนโลยีอุตสาหกรรม (CIT)',
-    'คณะบริหารธุรกิจ (Business Administration)',
-    'คณะพัฒนาธุรกิจและอุตสาหกรรม (BID)',
-    'คณะบริหารธุรกิจและอุตสาหกรรมบริการ (BAS)',
-    'คณะศิลปศาสตร์ประยุกต์ (Applied Arts)',
-    'คณะอุตสาหกรรมเกษตร (Agro-Industry)',
-    'คณะเทคโนโลยีและการจัดการอุตสาหกรรม (FITM)',
-    'คณะวิศวกรรมศาสตร์และเทคโนโลยี (Rayong)',
-    'วิทยาลัยนานาชาติ (KMUTNB International College)',
-    'สถาบันนวัตกรรมเทคโนโลยีไทย-ฝรั่งเศส (TFII)',
-    'โครงการจัดตั้งวิทยาเขตระยอง / ปราจีนบุรี',
+    'Faculty of Engineering',
+    'Faculty of Architecture and Design',
+    'Faculty of Information Technology and Digital Innovation (ITDI)',
+    'Faculty of Applied Science',
+    'Faculty of Technical Education',
+    'College of Industrial Technology (CIT)',
+    'Faculty of Business Administration',
+    'Faculty of Business and Industrial Development (BID)',
+    'Faculty of Business Administration and Service Industry (BAS)',
+    'Faculty of Applied Arts',
+    'Faculty of Agro-Industry',
+    'Faculty of Industrial Technology and Management (FITM)',
+    'Faculty of Engineering and Technology (Rayong)',
+    'KMUTNB International College',
+    'Thai-French Innovation Institute (TFII)',
+    'Rayong / Prachinburi Campus Project',
   ];
 
   final List<String> _years = [
@@ -59,57 +62,112 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   @override
   void dispose() {
-    _nameController.dispose();
-    _nicknameController.dispose();
-    _ageController.dispose();
+    _usernameController.dispose();
+    _majorController.dispose();
+    _dobController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
 
+  int _calculateAge(DateTime birthDate) {
+    final now = DateTime.now();
+    int age = now.year - birthDate.year;
+    if (now.month < birthDate.month ||
+        (now.month == birthDate.month && now.day < birthDate.day)) {
+      age--;
+    }
+    return age;
+  }
+
+  Future<void> _pickDateOfBirth() async {
+    final now = DateTime.now();
+    final defaultDate = DateTime(now.year - 19, now.month, now.day);
+    final initial = _selectedDob ?? defaultDate;
+    final firstDate = DateTime(1950, 1, 1);
+    final lastDate = now;
+
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: initial.isAfter(lastDate)
+          ? lastDate
+          : (initial.isBefore(firstDate) ? firstDate : initial),
+      firstDate: firstDate,
+      lastDate: lastDate,
+      helpText: 'SELECT DATE OF BIRTH',
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: ColorScheme.light(
+              primary: BauhausColors.primaryBlue,
+              onPrimary: Colors.white,
+              onSurface: BauhausColors.foreground,
+              surface: BauhausColors.surface,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (picked != null) {
+      setState(() {
+        _selectedDob = picked;
+        _dobController.text =
+            '${picked.day.toString().padLeft(2, '0')}/${picked.month.toString().padLeft(2, '0')}/${picked.year}';
+      });
+    }
+  }
+
   Future<void> _handleRegister() async {
+    final username = _usernameController.text.trim();
+    if (username.isEmpty) {
+      BauhausSnackBar.showWarning(context, 'Please enter username');
+      return;
+    }
+
+    if (_selectedDob == null) {
+      BauhausSnackBar.showWarning(context, 'Please select date of birth');
+      return;
+    }
+
+    if (_emailController.text.trim().isEmpty) {
+      BauhausSnackBar.showWarning(context, 'Please enter university email');
+      return;
+    }
+
+    if (_passwordController.text.isEmpty) {
+      BauhausSnackBar.showWarning(context, 'Please enter password');
+      return;
+    }
+
     setState(() => _isEmailLoading = true);
-    final age = int.tryParse(_ageController.text) ?? 20;
+    final age = _calculateAge(_selectedDob!);
 
     try {
       await context.read<AuthProvider>().register(
-        name: _nameController.text.isNotEmpty
-            ? _nameController.text
-            : 'New Student',
-        nickname: _nicknameController.text.isNotEmpty
-            ? _nicknameController.text
-            : 'Student',
+        name: username,
+        nickname: username,
         age: age,
         faculty: _selectedFaculty,
-        major: '-',
+        major: _majorController.text.trim().isNotEmpty
+            ? _majorController.text.trim()
+            : '-',
         year: _selectedYear,
-        email: _emailController.text.isNotEmpty
-            ? _emailController.text
-            : 'student@university.ac.th',
+        email: _emailController.text.trim(),
         password: _passwordController.text,
       );
-      // We will never hit this because register() either throws VERIFICATION_REQUIRED or FirebaseAuthException
+      if (mounted) {
+        BauhausSnackBar.showSuccess(
+          context,
+          'Registration successful! Please verify your email to start.',
+          duration: const Duration(seconds: 4),
+        );
+        Navigator.of(context).pushReplacementNamed(AppRoutes.emailVerification);
+      }
     } catch (e) {
       if (mounted) {
-        if (e.toString() == 'VERIFICATION_REQUIRED') {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                'Registration successful! Please check your email to verify your account.',
-              ),
-              backgroundColor: BauhausColors.primaryBlue,
-              duration: Duration(seconds: 5),
-            ),
-          );
-          Navigator.of(context).pushReplacementNamed(AppRoutes.login);
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(e.toString()),
-              backgroundColor: BauhausColors.primaryRed,
-            ),
-          );
-        }
+        BauhausSnackBar.showError(context, e.toString());
       }
     } finally {
       if (mounted) {
@@ -137,12 +195,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             context,
           ).pushReplacementNamed(AppRoutes.emailVerification);
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(e.toString()),
-              backgroundColor: BauhausColors.primaryRed,
-            ),
-          );
+          BauhausSnackBar.showError(context, e.toString());
         }
       }
     } finally {
@@ -169,14 +222,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   const GeometricBrandMark(size: 14, spacing: 6),
                   Container(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 3,
+                      horizontal: 10,
+                      vertical: 4,
                     ),
                     decoration: BoxDecoration(
                       color: BauhausColors.primaryBlue,
+                      borderRadius: BorderRadius.circular(999),
                       border: Border.all(
                         color: BauhausColors.border,
-                        width: 2.0,
+                        width: 1.0,
                       ),
                     ),
                     child: Text(
@@ -202,144 +256,104 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
               // Registration Card
               BauhausCard(
-                borderWidth: 3.5,
-                shadowOffset: 6.0,
                 cornerBadge: BauhausCornerBadgeType.squareBlue,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Expanded(
-                          flex: 2,
                           child: BauhausTextField(
-                            label: 'FULL NAME',
-                            hintText: 'e.g. Somchai Prasert',
-                            controller: _nameController,
+                            label: 'USERNAME',
+                            hintText: 'e.g. art_somchai',
+                            controller: _usernameController,
+                            isRequired: true,
+                            prefixIcon: Icon(
+                              Icons.person_outline,
+                              color: BauhausColors.foreground,
+                              size: 20,
+                            ),
                           ),
                         ),
                         const SizedBox(width: 12),
                         Expanded(
-                          flex: 1,
                           child: BauhausTextField(
-                            label: 'NICKNAME',
-                            hintText: 'e.g. Art',
-                            controller: _nicknameController,
+                            label: 'DATE OF BIRTH',
+                            hintText: 'DD/MM/YYYY',
+                            controller: _dobController,
+                            readOnly: true,
+                            isRequired: true,
+                            onTap: _pickDateOfBirth,
+                            prefixIcon: Icon(
+                              Icons.calendar_month_outlined,
+                              color: BauhausColors.foreground,
+                              size: 20,
+                            ),
                           ),
                         ),
                       ],
-                    ),
-                    const SizedBox(height: 14),
-                    BauhausTextField(
-                      label: 'AGE',
-                      hintText: 'e.g. 20',
-                      controller: _ageController,
-                      keyboardType: TextInputType.number,
                     ),
                     const SizedBox(height: 14),
 
                     // Faculty Selector
-                    Row(
-                      children: [
-                        Container(
-                          width: 8,
-                          height: 8,
-                          color: BauhausColors.primaryRed,
-                          margin: const EdgeInsets.only(right: 6),
-                        ),
-                        Text(
-                          'FACULTY'.toUpperCase(),
-                          style: BauhausTextStyles.badge().copyWith(
-                            fontWeight: FontWeight.w900,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ],
+                    BauhausDropdown<String>(
+                      label: 'FACULTY',
+                      isRequired: true,
+                      indicatorColor: BauhausColors.primaryRed,
+                      value: _selectedFaculty,
+                      items: _faculties,
+                      itemLabel: (f) => f,
+                      menuMaxHeight: 280,
+                      onChanged: (val) {
+                        if (val != null) {
+                          setState(() => _selectedFaculty = val);
+                        }
+                      },
                     ),
-                    const SizedBox(height: 6),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14),
-                      decoration: BoxDecoration(
-                        color: BauhausColors.surface,
-                        borderRadius: BorderRadius.zero,
-                        border: Border.all(
-                          color: BauhausColors.border,
-                          width: 2.0,
-                        ),
-                      ),
-                      child: DropdownButtonHideUnderline(
-                        child: DropdownButton<String>(
-                          value: _selectedFaculty,
-                          isExpanded: true,
-                          style: BauhausTextStyles.bodyLarge(),
-                          items: _faculties.map((f) {
-                            return DropdownMenuItem(value: f, child: Text(f));
-                          }).toList(),
-                          onChanged: (val) {
-                            if (val != null) {
-                              setState(() => _selectedFaculty = val);
-                            }
-                          },
-                        ),
+
+                    const SizedBox(height: 14),
+
+                    // Major Field
+                    BauhausTextField(
+                      label: 'MAJOR',
+                      hintText: 'e.g. Computer Engineering (CPE)',
+                      controller: _majorController,
+                      indicatorColor: BauhausColors.primaryBlue,
+                      prefixIcon: Icon(
+                        Icons.school_outlined,
+                        color: BauhausColors.foreground,
+                        size: 20,
                       ),
                     ),
 
                     const SizedBox(height: 14),
 
                     // Study Year Selector
-                    Row(
-                      children: [
-                        Container(
-                          width: 8,
-                          height: 8,
-                          color: BauhausColors.primaryYellow,
-                          margin: const EdgeInsets.only(right: 6),
-                        ),
-                        Text(
-                          'STUDY YEAR'.toUpperCase(),
-                          style: BauhausTextStyles.badge().copyWith(
-                            fontWeight: FontWeight.w900,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 6),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14),
-                      decoration: BoxDecoration(
-                        color: BauhausColors.surface,
-                        borderRadius: BorderRadius.zero,
-                        border: Border.all(
-                          color: BauhausColors.border,
-                          width: 2.0,
-                        ),
-                      ),
-                      child: DropdownButtonHideUnderline(
-                        child: DropdownButton<String>(
-                          value: _selectedYear,
-                          isExpanded: true,
-                          style: BauhausTextStyles.bodyLarge(),
-                          items: _years.map((y) {
-                            return DropdownMenuItem(value: y, child: Text(y));
-                          }).toList(),
-                          onChanged: (val) {
-                            if (val != null) {
-                              setState(() => _selectedYear = val);
-                            }
-                          },
-                        ),
-                      ),
+                    BauhausDropdown<String>(
+                      label: 'STUDY YEAR',
+                      isRequired: true,
+                      indicatorColor: BauhausColors.primaryYellow,
+                      value: _selectedYear,
+                      items: _years,
+                      itemLabel: (y) => y,
+                      menuMaxHeight: 240,
+                      onChanged: (val) {
+                        if (val != null) {
+                          setState(() => _selectedYear = val);
+                        }
+                      },
                     ),
 
                     const SizedBox(height: 14),
                     BauhausTextField(
-                      label: 'UNIVERSITY EMAIL',
-                      hintText: 'student.name@email.kmutnb.ac.th',
+                      label: 'EMAIL',
+                      hintText: 's6xx@email.kmutnb.ac.th',
                       controller: _emailController,
                       keyboardType: TextInputType.emailAddress,
-                      prefixIcon: const Icon(
-                        Icons.school,
+                      isRequired: true,
+                      prefixIcon: Icon(
+                        Icons.school_outlined,
                         color: BauhausColors.foreground,
                         size: 20,
                       ),
@@ -350,8 +364,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       hintText: 'Create a password (min. 6 characters)',
                       controller: _passwordController,
                       obscureText: true,
-                      prefixIcon: const Icon(
-                        Icons.lock,
+                      isRequired: true,
+                      prefixIcon: Icon(
+                        Icons.lock_outline,
                         color: BauhausColors.foreground,
                         size: 20,
                       ),
@@ -368,7 +383,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     const SizedBox(height: 20),
                     Row(
                       children: [
-                        const Expanded(
+                        Expanded(
                           child: Divider(
                             color: BauhausColors.border,
                             thickness: 1.5,
@@ -378,7 +393,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           padding: const EdgeInsets.symmetric(horizontal: 12),
                           child: Text('OR', style: BauhausTextStyles.badge()),
                         ),
-                        const Expanded(
+                        Expanded(
                           child: Divider(
                             color: BauhausColors.border,
                             thickness: 1.5,

@@ -6,6 +6,7 @@ import '../../widgets/bauhaus_shapes.dart';
 import '../../widgets/bauhaus_button.dart';
 import '../../widgets/bauhaus_card.dart';
 import '../../widgets/bauhaus_text_field.dart';
+import '../../widgets/bauhaus_snackbar.dart';
 import '../../providers/auth_provider.dart';
 import '../../routes/app_routes.dart';
 
@@ -40,12 +41,7 @@ class _LoginScreenState extends State<LoginScreen> {
         password: _passwordController.text,
       );
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Login successful'),
-            backgroundColor: BauhausColors.primaryBlue,
-          ),
-        );
+        BauhausSnackBar.showSuccess(context, 'Login successful');
         final auth = context.read<AuthProvider>();
         if (!auth.isProfileSetupComplete) {
           Navigator.of(context).pushReplacementNamed(AppRoutes.profileSetup);
@@ -60,12 +56,7 @@ class _LoginScreenState extends State<LoginScreen> {
             context,
           ).pushReplacementNamed(AppRoutes.emailVerification);
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(e.toString()),
-              backgroundColor: BauhausColors.primaryRed,
-            ),
-          );
+          BauhausSnackBar.showError(context, e.toString());
         }
       }
     } finally {
@@ -81,12 +72,7 @@ class _LoginScreenState extends State<LoginScreen> {
     try {
       await context.read<AuthProvider>().signInWithGoogle();
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Login successful'),
-            backgroundColor: BauhausColors.primaryBlue,
-          ),
-        );
+        BauhausSnackBar.showSuccess(context, 'Login successful');
         if (context.read<AuthProvider>().isProfileSetupComplete) {
           Navigator.of(context).pushReplacementNamed(AppRoutes.home);
         } else {
@@ -100,12 +86,7 @@ class _LoginScreenState extends State<LoginScreen> {
             context,
           ).pushReplacementNamed(AppRoutes.emailVerification);
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(e.toString()),
-              backgroundColor: BauhausColors.primaryRed,
-            ),
-          );
+          BauhausSnackBar.showError(context, e.toString());
         }
       }
     } finally {
@@ -130,8 +111,6 @@ class _LoginScreenState extends State<LoginScreen> {
               backgroundColor: Colors.transparent,
               elevation: 0,
               child: BauhausCard(
-                borderWidth: 3.0,
-                shadowOffset: 5.0,
                 cornerBadge: BauhausCornerBadgeType.squareBlue,
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -140,16 +119,16 @@ class _LoginScreenState extends State<LoginScreen> {
                     Text('RESET PASSWORD', style: BauhausTextStyles.title()),
                     const SizedBox(height: 12),
                     Text(
-                      'Enter your university email to receive a password reset link.',
+                      'Enter your email to receive a password reset link.',
                       style: BauhausTextStyles.bodyMedium(),
                     ),
                     const SizedBox(height: 16),
                     BauhausTextField(
-                      label: 'UNIVERSITY EMAIL',
-                      hintText: 'student.name@email.kmutnb.ac.th',
+                      label: 'EMAIL',
+                      hintText: 's6xx@email.kmutnb.ac.th',
                       controller: resetEmailController,
                       keyboardType: TextInputType.emailAddress,
-                      prefixIcon: const Icon(
+                      prefixIcon: Icon(
                         Icons.email,
                         color: BauhausColors.foreground,
                         size: 20,
@@ -180,26 +159,14 @@ class _LoginScreenState extends State<LoginScreen> {
                                     .resetPassword(resetEmailController.text);
                                 if (ctx.mounted) {
                                   Navigator.of(ctx).pop();
-                                  ScaffoldMessenger.of(
-                                    this.context,
-                                  ).showSnackBar(
-                                    const SnackBar(
-                                      content: Text(
-                                        'Password reset link sent! Check your inbox.',
-                                      ),
-                                      backgroundColor:
-                                          BauhausColors.primaryBlue,
-                                    ),
+                                  BauhausSnackBar.showSuccess(
+                                    ctx,
+                                    'Password reset link sent! Check your inbox.',
                                   );
                                 }
                               } catch (e) {
                                 if (ctx.mounted) {
-                                  ScaffoldMessenger.of(ctx).showSnackBar(
-                                    SnackBar(
-                                      content: Text(e.toString()),
-                                      backgroundColor: BauhausColors.primaryRed,
-                                    ),
-                                  );
+                                  BauhausSnackBar.showError(ctx, e.toString());
                                 }
                               } finally {
                                 if (ctx.mounted) {
@@ -238,14 +205,15 @@ class _LoginScreenState extends State<LoginScreen> {
                   const GeometricBrandMark(size: 14, spacing: 6),
                   Container(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 3,
+                      horizontal: 10,
+                      vertical: 4,
                     ),
                     decoration: BoxDecoration(
                       color: BauhausColors.cardYellow,
+                      borderRadius: BorderRadius.circular(999),
                       border: Border.all(
                         color: BauhausColors.border,
-                        width: 2.0,
+                        width: 1.0,
                       ),
                     ),
                     child: Text(
@@ -262,7 +230,7 @@ class _LoginScreenState extends State<LoginScreen> {
               Text('STUDENT\nLOGIN', style: BauhausTextStyles.hero()),
               const SizedBox(height: 8),
               Text(
-                'Enter your university credentials or student ID to access campus partner discovery.',
+                'Enter your email or student ID to access campus partner discovery.',
                 style: BauhausTextStyles.bodyMedium(
                   color: Colors.grey.shade700,
                 ),
@@ -272,18 +240,16 @@ class _LoginScreenState extends State<LoginScreen> {
 
               // Login Form Card
               BauhausCard(
-                borderWidth: 3.5,
-                shadowOffset: 6.0,
                 cornerBadge: BauhausCornerBadgeType.circleRed,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     BauhausTextField(
-                      label: 'UNIVERSITY EMAIL / STUDENT ID',
-                      hintText: 'student.name@email.kmutnb.ac.th',
+                      label: 'EMAIL',
+                      hintText: 's6xx@email.kmutnb.ac.th',
                       controller: _emailController,
                       keyboardType: TextInputType.emailAddress,
-                      prefixIcon: const Icon(
+                      prefixIcon: Icon(
                         Icons.school,
                         color: BauhausColors.foreground,
                         size: 20,
@@ -295,7 +261,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       hintText: 'Enter your password',
                       controller: _passwordController,
                       obscureText: true,
-                      prefixIcon: const Icon(
+                      prefixIcon: Icon(
                         Icons.lock,
                         color: BauhausColors.foreground,
                         size: 20,
@@ -326,7 +292,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     const SizedBox(height: 20),
                     Row(
                       children: [
-                        const Expanded(
+                        Expanded(
                           child: Divider(
                             color: BauhausColors.border,
                             thickness: 1.5,
@@ -336,7 +302,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           padding: const EdgeInsets.symmetric(horizontal: 12),
                           child: Text('OR', style: BauhausTextStyles.badge()),
                         ),
-                        const Expanded(
+                        Expanded(
                           child: Divider(
                             color: BauhausColors.border,
                             thickness: 1.5,

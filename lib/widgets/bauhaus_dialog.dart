@@ -8,6 +8,7 @@ class BauhausDialog extends StatelessWidget {
   final Widget content;
   final String? primaryActionText;
   final VoidCallback? onPrimaryAction;
+  final BauhausButtonVariant primaryActionVariant;
   final String? secondaryActionText;
   final VoidCallback? onSecondaryAction;
   final Color headerColor;
@@ -20,6 +21,7 @@ class BauhausDialog extends StatelessWidget {
     required this.content,
     this.primaryActionText,
     this.onPrimaryAction,
+    this.primaryActionVariant = BauhausButtonVariant.primaryRed,
     this.secondaryActionText,
     this.onSecondaryAction,
     this.headerColor = BauhausColors.primaryRed,
@@ -33,6 +35,7 @@ class BauhausDialog extends StatelessWidget {
     required Widget content,
     String? primaryActionText,
     VoidCallback? onPrimaryAction,
+    BauhausButtonVariant primaryActionVariant = BauhausButtonVariant.primaryRed,
     String? secondaryActionText,
     VoidCallback? onSecondaryAction,
     Color headerColor = BauhausColors.primaryRed,
@@ -47,6 +50,7 @@ class BauhausDialog extends StatelessWidget {
         content: content,
         primaryActionText: primaryActionText,
         onPrimaryAction: onPrimaryAction,
+        primaryActionVariant: primaryActionVariant,
         secondaryActionText: secondaryActionText,
         onSecondaryAction: onSecondaryAction,
         headerColor: headerColor,
@@ -68,9 +72,12 @@ class BauhausDialog extends StatelessWidget {
         decoration: BoxDecoration(
           color: BauhausColors.surface,
           borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: BauhausColors.border, width: 1.0),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.1),
+              color: Colors.black.withValues(
+                alpha: BauhausColors.isDark ? 0.35 : 0.1,
+              ),
               offset: const Offset(0, 10),
               blurRadius: 30,
             ),
@@ -87,9 +94,14 @@ class BauhausDialog extends StatelessWidget {
                 horizontal: 20.0,
                 vertical: 16.0,
               ),
-              color: headerColor == BauhausColors.primaryRed
-                  ? BauhausColors.surface
-                  : headerColor,
+              decoration: BoxDecoration(
+                color: headerColor == BauhausColors.primaryRed
+                    ? BauhausColors.surface
+                    : headerColor,
+                border: Border(
+                  bottom: BorderSide(color: BauhausColors.border, width: 1.0),
+                ),
+              ),
               child: Row(
                 children: [
                   if (icon != null) ...[icon!, const SizedBox(width: 10)],
@@ -107,11 +119,11 @@ class BauhausDialog extends StatelessWidget {
                     onTap: () => Navigator.of(context).pop(),
                     child: Container(
                       padding: const EdgeInsets.all(4),
-                      decoration: const BoxDecoration(
+                      decoration: BoxDecoration(
                         color: BauhausColors.muted,
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.close,
                         size: 18,
                         color: BauhausColors.foreground,
@@ -146,7 +158,7 @@ class BauhausDialog extends StatelessWidget {
                         text: primaryActionText!,
                         height: 42,
                         fontSize: 12,
-                        variant: BauhausButtonVariant.primaryRed,
+                        variant: primaryActionVariant,
                         onPressed:
                             onPrimaryAction ??
                             () => Navigator.of(context).pop(),

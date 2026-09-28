@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
 import '../theme/bauhaus_colors.dart';
 import '../theme/bauhaus_text_styles.dart';
-import 'bauhaus_shapes.dart';
 
 class BauhausAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String title;
   final Widget? leading;
   final List<Widget>? actions;
-  final Color backgroundColor;
-  final Color foregroundColor;
+  final Color? backgroundColor;
+  final Color? foregroundColor;
   final bool showBrandMark;
   final bool automaticallyImplyLeading;
   final double bottomBorderWidth;
@@ -18,11 +17,11 @@ class BauhausAppBar extends StatelessWidget implements PreferredSizeWidget {
     required this.title,
     this.leading,
     this.actions,
-    this.backgroundColor = BauhausColors.surface,
-    this.foregroundColor = BauhausColors.foreground,
+    this.backgroundColor,
+    this.foregroundColor,
     this.showBrandMark = true,
     this.automaticallyImplyLeading = true,
-    this.bottomBorderWidth = 3.0,
+    this.bottomBorderWidth = 1.0,
   });
 
   const BauhausAppBar.red({
@@ -32,7 +31,7 @@ class BauhausAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.actions,
     this.showBrandMark = false,
     this.automaticallyImplyLeading = true,
-    this.bottomBorderWidth = 3.0,
+    this.bottomBorderWidth = 1.0,
   }) : backgroundColor = BauhausColors.primaryRed,
        foregroundColor = Colors.white;
 
@@ -43,7 +42,7 @@ class BauhausAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.actions,
     this.showBrandMark = false,
     this.automaticallyImplyLeading = true,
-    this.bottomBorderWidth = 3.0,
+    this.bottomBorderWidth = 1.0,
   }) : backgroundColor = BauhausColors.primaryBlue,
        foregroundColor = Colors.white;
 
@@ -54,15 +53,18 @@ class BauhausAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.actions,
     this.showBrandMark = false,
     this.automaticallyImplyLeading = true,
-    this.bottomBorderWidth = 3.0,
+    this.bottomBorderWidth = 1.0,
   }) : backgroundColor = BauhausColors.primaryYellow,
-       foregroundColor = BauhausColors.foreground;
+       foregroundColor = Colors.black;
 
   @override
   Size get preferredSize => const Size.fromHeight(60.0);
 
   @override
   Widget build(BuildContext context) {
+    final effectiveBg = backgroundColor ?? BauhausColors.surface;
+    final effectiveFg = foregroundColor ?? BauhausColors.foreground;
+
     Widget? effectiveLeading = leading;
     if (effectiveLeading == null &&
         automaticallyImplyLeading &&
@@ -75,7 +77,7 @@ class BauhausAppBar extends StatelessWidget implements PreferredSizeWidget {
             shape: BoxShape.circle,
             border: Border.all(color: BauhausColors.border, width: 1.0),
           ),
-          child: const Icon(
+          child: Icon(
             Icons.arrow_back,
             size: 20,
             color: BauhausColors.foreground,
@@ -87,11 +89,11 @@ class BauhausAppBar extends StatelessWidget implements PreferredSizeWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: backgroundColor,
+        color: effectiveBg,
         border: Border(
           bottom: BorderSide(
             color: BauhausColors.border,
-            width: bottomBorderWidth == 3.0 ? 1.0 : bottomBorderWidth,
+            width: bottomBorderWidth,
           ),
         ),
       ),
@@ -110,7 +112,7 @@ class BauhausAppBar extends StatelessWidget implements PreferredSizeWidget {
                 child: Text(
                   title,
                   style: BauhausTextStyles.title(
-                    color: foregroundColor,
+                    color: effectiveFg,
                   ).copyWith(fontWeight: FontWeight.w600),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,

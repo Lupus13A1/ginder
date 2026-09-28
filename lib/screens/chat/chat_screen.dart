@@ -4,13 +4,17 @@ import 'package:provider/provider.dart';
 import '../../theme/bauhaus_colors.dart';
 import '../../theme/bauhaus_text_styles.dart';
 import '../../widgets/bauhaus_shapes.dart';
-import '../../widgets/bauhaus_badge.dart';
-import '../../widgets/bauhaus_button.dart';
-import '../../widgets/bauhaus_bottom_sheet.dart';
+import '../../widgets/bauhaus_snackbar.dart';
 import '../../models/chat_message.dart';
 import '../../providers/chat_provider.dart';
+import '../../providers/auth_provider.dart';
 import '../../services/image_upload_service.dart';
+import '../../models/student_profile.dart';
+import '../../widgets/bauhaus_button.dart';
+import '../../widgets/bauhaus_dialog.dart';
+import '../../widgets/bauhaus_bottom_sheet.dart';
 import '../safety/report_dialog.dart';
+import '../profile/profile_preview_dialog.dart';
 
 class ChatScreen extends StatefulWidget {
   final String conversationId;
@@ -118,11 +122,9 @@ class _ChatScreenState extends State<ChatScreen> {
       );
       Future.delayed(const Duration(milliseconds: 100), _scrollToBottom);
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(result.errorMessage ?? 'Failed to upload photo'),
-          backgroundColor: BauhausColors.primaryRed,
-        ),
+      BauhausSnackBar.showError(
+        context,
+        result.errorMessage ?? 'Failed to upload photo',
       );
     }
   }
@@ -133,67 +135,62 @@ class _ChatScreenState extends State<ChatScreen> {
     );
     if (conv == null) return;
     final peer = conv.peer;
+    ProfilePreviewDialog.show(
+      context,
+      peer,
+      onUnmatchedOrBlocked: () {
+        if (mounted) {
+          Navigator.of(context).pop();
+        }
+      },
+    );
+  }
 
+  void _showChatSafetyOptions(StudentProfile peer) {
     BauhausBottomSheet.show(
       context: context,
-      title: '${peer.nickname.toUpperCase()} (PROFILE)',
-      headerColor: BauhausColors.primaryYellow,
+      title: 'CHAT & SAFETY OPTIONS',
       content: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Row(
-            children: [
-              BauhausAvatar(
-                imageUrl: peer.photos.isNotEmpty ? peer.photos.first : null,
-                initial: peer.nickname[0],
-                size: 70,
-                isCircle: false,
-                backgroundColor: BauhausColors.primaryBlue,
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '${peer.name}, ${peer.age}',
-                      style: BauhausTextStyles.headlineMedium(),
-                    ),
-                    const SizedBox(height: 4),
-                    BauhausBadge(
-                      label: peer.faculty,
-                      variant: BauhausBadgeVariant.red,
-                    ),
-                    const SizedBox(height: 4),
-                    Text(peer.major, style: BauhausTextStyles.bodyMedium()),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Text('CAMPUS BIO', style: BauhausTextStyles.badge()),
-          const SizedBox(height: 4),
-          Text(peer.bio, style: BauhausTextStyles.bodyMedium()),
-          const SizedBox(height: 16),
-          Text('INTERESTS', style: BauhausTextStyles.badge()),
-          const SizedBox(height: 6),
-          Wrap(
-            spacing: 6,
-            runSpacing: 6,
-            children: peer.interests
-                .map(
-                  (i) => BauhausBadge(
-                    label: i,
-                    variant: BauhausBadgeVariant.surface,
-                  ),
-                )
-                .toList(),
-          ),
-          const SizedBox(height: 20),
-          BauhausButton.outline(
-            text: 'REPORT OR BLOCK STUDENT',
+          // Primary Action: UNMATCH (prominent, accessible)
+          BauhausButton(
+            text: 'UNMATCH',
+            variant: BauhausButtonVariant.black,
             isFullWidth: true,
+            icon: const Icon(Icons.heart_broken_outlined, size: 18),
+            onPressed: () {
+              Navigator.of(context).pop();
+              _confirmUnmatchChat(peer);
+            },
+          ),
+          const SizedBox(height: 10),
+          // Secondary Action: BLOCK (lower visual weight)
+          BauhausButton.outline(
+            text: 'BLOCK ${peer.nickname.toUpperCase()}',
+            isFullWidth: true,
+            icon: const Icon(
+              Icons.block,
+              size: 18,
+              color: BauhausColors.primaryRed,
+            ),
+            onPressed: () {
+              Navigator.of(context).pop();
+              _confirmBlockChat(peer);
+            },
+          ),
+          const SizedBox(height: 10),
+          // Tertiary Action: REPORT
+          BauhausButton(
+            text: 'REPORT STUDENT / INCIDENT',
+            variant: BauhausButtonVariant.ghost,
+            isFullWidth: true,
+            icon: Icon(
+              Icons.flag_outlined,
+              size: 18,
+              color: BauhausColors.foreground,
+            ),
             onPressed: () {
               Navigator.of(context).pop();
               ReportUserDialog.show(context, reportedStudent: peer);
@@ -201,6 +198,118 @@ class _ChatScreenState extends State<ChatScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  void _confirmUnmatchChat(StudentProfile peer) {
+    BauhausDialog.show(
+      context: context,
+      title: 'Unmatch Student',
+      headerColor: BauhausColors.primaryYellow,
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: BauhausColors.cardYellow,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.heart_broken_outlined,
+              size: 32,
+              color: BauhausColors.foreground,
+            ),
+          ),
+          const SizedBox(height: 14),
+          Text(
+            'Unmatch with ${peer.name.toUpperCase()}?',
+            textAlign: TextAlign.center,
+            style: BauhausTextStyles.title(),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Unmatching will remove your conversation history. You may still encounter each other again in Discover in the future.',
+            textAlign: TextAlign.center,
+            style: BauhausTextStyles.bodyMedium(),
+          ),
+        ],
+      ),
+      primaryActionText: 'UNMATCH',
+      primaryActionVariant: BauhausButtonVariant.black,
+      secondaryActionText: 'CANCEL',
+      onPrimaryAction: () async {
+        Navigator.of(context).pop(); // dismiss dialog
+        final chat = context.read<ChatProvider>();
+        await chat.unmatch(
+          conversationId: widget.conversationId,
+          peerUid: peer.id,
+        );
+        if (mounted) {
+          Navigator.of(context).pop(); // pop ChatScreen back to Matches
+          BauhausSnackBar.showSuccess(
+            context,
+            'Unmatched with ${peer.nickname}',
+          );
+        }
+      },
+    );
+  }
+
+  void _confirmBlockChat(StudentProfile peer) {
+    BauhausDialog.show(
+      context: context,
+      title: 'Block Student',
+      headerColor: BauhausColors.primaryRed,
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: BauhausColors.primaryRed.withValues(alpha: 0.1),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.block,
+              size: 32,
+              color: BauhausColors.primaryRed,
+            ),
+          ),
+          const SizedBox(height: 14),
+          Text(
+            'Block ${peer.name.toUpperCase()}?',
+            textAlign: TextAlign.center,
+            style: BauhausTextStyles.title(),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Blocking will immediately unmatch and delete all chat history. This student will never appear in your Discover swipe feed or match with you again.',
+            textAlign: TextAlign.center,
+            style: BauhausTextStyles.bodyMedium(),
+          ),
+        ],
+      ),
+      primaryActionText: 'BLOCK USER',
+      primaryActionVariant: BauhausButtonVariant.primaryRed,
+      secondaryActionText: 'CANCEL',
+      onPrimaryAction: () async {
+        Navigator.of(context).pop(); // dismiss dialog
+        final auth = context.read<AuthProvider>();
+        final chat = context.read<ChatProvider>();
+        await auth.blockUser(peer.id);
+        await chat.block(
+          conversationId: widget.conversationId,
+          peerUid: peer.id,
+        );
+        if (mounted) {
+          Navigator.of(context).pop(); // pop ChatScreen back to Matches
+          BauhausSnackBar.showError(
+            context,
+            'Blocked ${peer.nickname}. You will not see this student again.',
+          );
+        }
+      },
     );
   }
 
@@ -216,7 +325,7 @@ class _ChatScreenState extends State<ChatScreen> {
           backgroundColor: BauhausColors.surface,
           elevation: 0,
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back, color: BauhausColors.foreground),
+            icon: Icon(Icons.arrow_back, color: BauhausColors.foreground),
             onPressed: () => Navigator.of(context).pop(),
           ),
           title: Text('CAMPUS CHAT', style: BauhausTextStyles.headlineMedium()),
@@ -247,10 +356,10 @@ class _ChatScreenState extends State<ChatScreen> {
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(65),
         child: Container(
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             color: BauhausColors.surface,
             border: Border(
-              bottom: BorderSide(color: BauhausColors.border, width: 3.0),
+              bottom: BorderSide(color: BauhausColors.border, width: 1.0),
             ),
           ),
           child: SafeArea(
@@ -259,7 +368,7 @@ class _ChatScreenState extends State<ChatScreen> {
               child: Row(
                 children: [
                   IconButton(
-                    icon: const Icon(
+                    icon: Icon(
                       Icons.arrow_back,
                       color: BauhausColors.foreground,
                     ),
@@ -280,7 +389,7 @@ class _ChatScreenState extends State<ChatScreen> {
                           size: 40,
                           isCircle: true,
                           backgroundColor: BauhausColors.primaryBlue,
-                          borderWidth: 2.0,
+                          borderWidth: 1.0,
                           shadowOffset: 0,
                         ),
                         const SizedBox(width: 10),
@@ -326,13 +435,25 @@ class _ChatScreenState extends State<ChatScreen> {
                   ),
                   const Spacer(),
                   IconButton(
-                    icon: const Icon(
-                      Icons.shield_outlined,
-                      color: BauhausColors.primaryRed,
+                    icon: Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: BauhausColors.surface,
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: BauhausColors.border,
+                          width: 1.0,
+                        ),
+                      ),
+                      child: Icon(
+                        Icons.more_horiz,
+                        color: BauhausColors.foreground,
+                        size: 20,
+                      ),
                     ),
-                    tooltip: 'Safety & Report',
-                    onPressed: () =>
-                        ReportUserDialog.show(context, reportedStudent: peer),
+                    tooltip: 'More Options',
+                    onPressed: () => _showChatSafetyOptions(peer),
                   ),
                 ],
               ),
@@ -376,16 +497,23 @@ class _ChatScreenState extends State<ChatScreen> {
                   ),
                   child: Container(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
+                      horizontal: 12,
                       vertical: 6,
                     ),
                     decoration: BoxDecoration(
                       color: BauhausColors.cardYellow,
-                      borderRadius: BorderRadius.zero,
+                      borderRadius: BorderRadius.circular(999),
                       border: Border.all(
                         color: BauhausColors.border,
-                        width: 1.5,
+                        width: 1.0,
                       ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.04),
+                          blurRadius: 3,
+                          offset: const Offset(0, 1),
+                        ),
+                      ],
                     ),
                     child: Text(
                       icebreaker,
@@ -403,10 +531,10 @@ class _ChatScreenState extends State<ChatScreen> {
           if (_showEmojiTray)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 color: BauhausColors.surface,
                 border: Border(
-                  top: BorderSide(color: BauhausColors.border, width: 2.0),
+                  top: BorderSide(color: BauhausColors.border, width: 1.0),
                 ),
               ),
               child: Wrap(
@@ -427,10 +555,10 @@ class _ChatScreenState extends State<ChatScreen> {
               horizontal: 12.0,
               vertical: 8.0,
             ),
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               color: BauhausColors.surface,
               border: Border(
-                top: BorderSide(color: BauhausColors.border, width: 3.0),
+                top: BorderSide(color: BauhausColors.border, width: 1.0),
               ),
             ),
             child: SafeArea(
@@ -459,7 +587,7 @@ class _ChatScreenState extends State<ChatScreen> {
                               color: BauhausColors.primaryRed,
                             ),
                           )
-                        : const Icon(
+                        : Icon(
                             Icons.add_photo_alternate_outlined,
                             color: BauhausColors.foreground,
                           ),
@@ -471,7 +599,7 @@ class _ChatScreenState extends State<ChatScreen> {
                     child: TextField(
                       controller: _textController,
                       style: BauhausTextStyles.bodyMedium(),
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         hintText: 'Type campus message...',
                         filled: true,
                         fillColor: BauhausColors.background,
@@ -480,24 +608,24 @@ class _ChatScreenState extends State<ChatScreen> {
                           vertical: 10,
                         ),
                         border: OutlineInputBorder(
-                          borderRadius: BorderRadius.zero,
+                          borderRadius: BorderRadius.all(Radius.circular(12)),
                           borderSide: BorderSide(
                             color: BauhausColors.border,
-                            width: 2.0,
+                            width: 1.0,
                           ),
                         ),
                         enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.zero,
+                          borderRadius: BorderRadius.all(Radius.circular(12)),
                           borderSide: BorderSide(
                             color: BauhausColors.border,
-                            width: 2.0,
+                            width: 1.0,
                           ),
                         ),
                         focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.zero,
+                          borderRadius: BorderRadius.all(Radius.circular(12)),
                           borderSide: BorderSide(
                             color: BauhausColors.primaryBlue,
-                            width: 2.5,
+                            width: 1.5,
                           ),
                         ),
                       ),
@@ -513,15 +641,16 @@ class _ChatScreenState extends State<ChatScreen> {
                       height: 46,
                       decoration: BoxDecoration(
                         color: BauhausColors.primaryRed,
+                        borderRadius: BorderRadius.circular(12),
                         border: Border.all(
                           color: BauhausColors.border,
-                          width: 2.0,
+                          width: 1.0,
                         ),
-                        boxShadow: const [
+                        boxShadow: [
                           BoxShadow(
-                            color: BauhausColors.border,
-                            offset: Offset(2, 2),
-                            blurRadius: 0,
+                            color: Colors.black.withValues(alpha: 0.08),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
                           ),
                         ],
                       ),
@@ -556,13 +685,28 @@ class _ChatScreenState extends State<ChatScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
           color: isMe ? BauhausColors.primaryBlue : BauhausColors.surface,
-          borderRadius: BorderRadius.zero,
-          border: Border.all(color: BauhausColors.border, width: 2.5),
-          boxShadow: const [
+          borderRadius: isMe
+              ? const BorderRadius.only(
+                  topLeft: Radius.circular(16),
+                  topRight: Radius.circular(16),
+                  bottomLeft: Radius.circular(16),
+                  bottomRight: Radius.circular(4),
+                )
+              : const BorderRadius.only(
+                  topLeft: Radius.circular(16),
+                  topRight: Radius.circular(16),
+                  bottomRight: Radius.circular(16),
+                  bottomLeft: Radius.circular(4),
+                ),
+          border: Border.all(
+            color: isMe ? BauhausColors.primaryBlue : BauhausColors.border,
+            width: 1.0,
+          ),
+          boxShadow: [
             BoxShadow(
-              color: BauhausColors.border,
-              offset: Offset(3, 3),
-              blurRadius: 0,
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 4,
+              offset: const Offset(0, 1),
             ),
           ],
         ),
@@ -574,8 +718,10 @@ class _ChatScreenState extends State<ChatScreen> {
             if (msg.imageUrl != null && msg.imageUrl!.isNotEmpty) ...[
               Container(
                 margin: const EdgeInsets.only(bottom: 6),
+                clipBehavior: Clip.antiAlias,
                 decoration: BoxDecoration(
-                  border: Border.all(color: BauhausColors.border, width: 2),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: BauhausColors.border, width: 1.0),
                 ),
                 child: Image.network(
                   msg.imageUrl!,

@@ -66,14 +66,18 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     }
   }
 
-  void _finishOnboarding() {
-    context.read<AuthProvider>().completeOnboarding();
-    Navigator.of(context).pushReplacementNamed(AppRoutes.register);
+  Future<void> _finishOnboarding() async {
+    await context.read<AuthProvider>().completeOnboarding();
+    if (mounted) {
+      Navigator.of(context).pushReplacementNamed(AppRoutes.register);
+    }
   }
 
-  void _goToLogin() {
-    context.read<AuthProvider>().completeOnboarding();
-    Navigator.of(context).pushReplacementNamed(AppRoutes.login);
+  Future<void> _goToLogin() async {
+    await context.read<AuthProvider>().completeOnboarding();
+    if (mounted) {
+      Navigator.of(context).pushReplacementNamed(AppRoutes.login);
+    }
   }
 
   @override
@@ -116,14 +120,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   ];
                   return Expanded(
                     child: Container(
-                      height: 8,
+                      height: 6,
                       margin: EdgeInsets.only(right: index < 2 ? 8 : 0),
                       decoration: BoxDecoration(
                         color: isActive ? colors[index] : BauhausColors.surface,
-                        borderRadius: BorderRadius.zero,
+                        borderRadius: BorderRadius.circular(4),
                         border: Border.all(
                           color: BauhausColors.border,
-                          width: 2.0,
+                          width: 1.0,
                         ),
                       ),
                     ),
@@ -147,9 +151,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       children: [
                         // Card composition
                         BauhausCard(
-                          borderWidth: 3.5,
-                          shadowOffset: 6.0,
-                          cornerBadge: slide['shape'] as BauhausCornerBadgeType,
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -164,9 +165,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                                     ),
                                     decoration: BoxDecoration(
                                       color: slide['color'] as Color,
+                                      borderRadius: BorderRadius.circular(8),
                                       border: Border.all(
                                         color: BauhausColors.border,
-                                        width: 2.0,
+                                        width: 1.0,
                                       ),
                                     ),
                                     child: Text(
@@ -182,19 +184,22 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                                   ),
                                   Container(
                                     padding: const EdgeInsets.symmetric(
-                                      horizontal: 8,
-                                      vertical: 3,
+                                      horizontal: 10,
+                                      vertical: 4,
                                     ),
                                     decoration: BoxDecoration(
                                       color: BauhausColors.cardYellow,
+                                      borderRadius: BorderRadius.circular(999),
                                       border: Border.all(
                                         color: BauhausColors.border,
-                                        width: 1.5,
+                                        width: 1.0,
                                       ),
                                     ),
                                     child: Text(
                                       slide['tag'] as String,
-                                      style: BauhausTextStyles.badge(),
+                                      style: BauhausTextStyles.badge().copyWith(
+                                        fontSize: 10,
+                                      ),
                                     ),
                                   ),
                                 ],
@@ -205,13 +210,13 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                                   width: 90,
                                   height: 90,
                                   decoration: BoxDecoration(
-                                    color: (slide['color'] as Color).withAlpha(
-                                      40,
+                                    color: (slide['color'] as Color).withValues(
+                                      alpha: 0.15,
                                     ),
                                     shape: BoxShape.circle,
                                     border: Border.all(
                                       color: BauhausColors.border,
-                                      width: 2.5,
+                                      width: 1.0,
                                     ),
                                   ),
                                   child: Icon(

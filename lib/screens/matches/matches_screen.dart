@@ -47,10 +47,10 @@ class _MatchesScreenState extends State<MatchesScreen> {
             // Header
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 color: BauhausColors.surface,
                 border: Border(
-                  bottom: BorderSide(color: BauhausColors.border, width: 3.0),
+                  bottom: BorderSide(color: BauhausColors.border, width: 1.0),
                 ),
               ),
               child: Row(
@@ -67,14 +67,15 @@ class _MatchesScreenState extends State<MatchesScreen> {
                   if (chatProvider.totalUnreadCount > 0)
                     Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 2,
+                        horizontal: 10,
+                        vertical: 3,
                       ),
                       decoration: BoxDecoration(
                         color: BauhausColors.primaryRed,
+                        borderRadius: BorderRadius.circular(999),
                         border: Border.all(
                           color: BauhausColors.border,
-                          width: 1.5,
+                          width: 1.0,
                         ),
                       ),
                       child: Text(
@@ -95,7 +96,7 @@ class _MatchesScreenState extends State<MatchesScreen> {
                 style: BauhausTextStyles.bodyMedium(),
                 decoration: InputDecoration(
                   hintText: 'Search campus matches by name or faculty...',
-                  prefixIcon: const Icon(
+                  prefixIcon: Icon(
                     Icons.search,
                     color: BauhausColors.foreground,
                   ),
@@ -111,14 +112,28 @@ class _MatchesScreenState extends State<MatchesScreen> {
                   filled: true,
                   fillColor: BauhausColors.surface,
                   contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 12,
+                    horizontal: 14,
                     vertical: 10,
                   ),
-                  border: const OutlineInputBorder(
-                    borderRadius: BorderRadius.zero,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide(
                       color: BauhausColors.border,
-                      width: 2.0,
+                      width: 1.0,
+                    ),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(
+                      color: BauhausColors.border,
+                      width: 1.0,
+                    ),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(
+                      color: BauhausColors.primaryBlue,
+                      width: 1.5,
                     ),
                   ),
                 ),
@@ -210,9 +225,9 @@ class _MatchesScreenState extends State<MatchesScreen> {
                       ),
                     ),
 
-                    const Divider(
-                      thickness: 2.0,
-                      color: BauhausColors.border,
+                    Divider(
+                      thickness: 1.0,
+                      color: BauhausColors.borderSubtle,
                       height: 24,
                     ),
 
@@ -222,7 +237,10 @@ class _MatchesScreenState extends State<MatchesScreen> {
                         Container(
                           width: 8,
                           height: 8,
-                          color: BauhausColors.primaryBlue,
+                          decoration: const BoxDecoration(
+                            color: BauhausColors.primaryBlue,
+                            shape: BoxShape.circle,
+                          ),
                           margin: const EdgeInsets.only(right: 6),
                         ),
                         Text(
@@ -241,9 +259,10 @@ class _MatchesScreenState extends State<MatchesScreen> {
                         padding: const EdgeInsets.all(20),
                         decoration: BoxDecoration(
                           color: BauhausColors.surface,
+                          borderRadius: BorderRadius.circular(16),
                           border: Border.all(
                             color: BauhausColors.border,
-                            width: 2.0,
+                            width: 1.0,
                           ),
                         ),
                         child: Center(
@@ -276,31 +295,41 @@ class _MatchesScreenState extends State<MatchesScreen> {
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
-        color: hasUnread ? BauhausColors.cardYellow : BauhausColors.surface,
-        borderRadius: BorderRadius.zero,
-        border: Border.all(color: BauhausColors.border, width: 2.5),
-        boxShadow: const [
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
           BoxShadow(
-            color: BauhausColors.border,
-            offset: Offset(3, 3),
-            blurRadius: 0,
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
       child: Material(
-        type: MaterialType.transparency,
+        color: hasUnread
+            ? BauhausColors.primaryYellow.withValues(alpha: 0.15)
+            : BauhausColors.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(
+            color: hasUnread
+                ? BauhausColors.primaryYellow.withValues(alpha: 0.5)
+                : BauhausColors.border,
+            width: 1.0,
+          ),
+        ),
+        clipBehavior: Clip.antiAlias,
         child: ListTile(
           contentPadding: const EdgeInsets.symmetric(
-            horizontal: 12,
-            vertical: 6,
+            horizontal: 14,
+            vertical: 8,
           ),
           leading: BauhausAvatar(
             imageUrl: peer.photos.isNotEmpty ? peer.photos.first : null,
             initial: peer.nickname[0],
             size: 48,
-            isCircle: false,
+            isCircle: true,
             backgroundColor: BauhausColors.primaryBlue,
-            borderWidth: 2.0,
+            borderWidth: 1.0,
             shadowOffset: 0,
           ),
           title: Row(
@@ -346,7 +375,7 @@ class _MatchesScreenState extends State<MatchesScreen> {
                   decoration: BoxDecoration(
                     color: BauhausColors.primaryRed,
                     shape: BoxShape.circle,
-                    border: Border.all(color: BauhausColors.border, width: 1.5),
+                    border: Border.all(color: Colors.white, width: 1.0),
                   ),
                   child: Center(
                     child: Text(
@@ -359,7 +388,7 @@ class _MatchesScreenState extends State<MatchesScreen> {
                     ),
                   ),
                 )
-              : const Icon(
+              : Icon(
                   Icons.chevron_right,
                   color: BauhausColors.foreground,
                   size: 20,
@@ -380,15 +409,16 @@ class _MatchesScreenState extends State<MatchesScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              padding: const EdgeInsets.all(22),
+              padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
                 color: BauhausColors.cardYellow,
-                border: Border.all(color: BauhausColors.border, width: 3.0),
-                boxShadow: const [
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: BauhausColors.border, width: 1.0),
+                boxShadow: [
                   BoxShadow(
-                    color: BauhausColors.border,
-                    offset: Offset(4, 4),
-                    blurRadius: 0,
+                    color: Colors.black.withValues(alpha: 0.06),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
                   ),
                 ],
               ),

@@ -2,7 +2,18 @@ import 'package:flutter/material.dart';
 import '../theme/bauhaus_colors.dart';
 import '../theme/bauhaus_text_styles.dart';
 
-enum BauhausBadgeVariant { red, blue, yellow, surface, black, muted }
+enum BauhausBadgeVariant {
+  red,
+  blue,
+  yellow,
+  surface,
+  black,
+  muted,
+  success,
+  warning,
+  error,
+  info,
+}
 
 class BauhausBadge extends StatelessWidget {
   final String label;
@@ -23,7 +34,7 @@ class BauhausBadge extends StatelessWidget {
     this.onTap,
     this.fontSize = 11.0,
     this.padding = const EdgeInsets.symmetric(horizontal: 10.0, vertical: 4.0),
-    this.borderWidth = 1.5,
+    this.borderWidth = 1.0,
   });
 
   const BauhausBadge.square({
@@ -34,7 +45,7 @@ class BauhausBadge extends StatelessWidget {
     this.onTap,
     this.fontSize = 11.0,
     this.padding = const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
-    this.borderWidth = 1.5,
+    this.borderWidth = 1.0,
   }) : isPill = false;
 
   Color _getBackgroundColor() {
@@ -51,6 +62,14 @@ class BauhausBadge extends StatelessWidget {
         return BauhausColors.foreground;
       case BauhausBadgeVariant.muted:
         return BauhausColors.muted;
+      case BauhausBadgeVariant.success:
+        return BauhausColors.successLight;
+      case BauhausBadgeVariant.warning:
+        return BauhausColors.warningLight;
+      case BauhausBadgeVariant.error:
+        return BauhausColors.errorLight;
+      case BauhausBadgeVariant.info:
+        return BauhausColors.infoLight;
     }
   }
 
@@ -64,6 +83,14 @@ class BauhausBadge extends StatelessWidget {
       case BauhausBadgeVariant.surface:
       case BauhausBadgeVariant.muted:
         return BauhausColors.foreground;
+      case BauhausBadgeVariant.success:
+        return BauhausColors.successDark;
+      case BauhausBadgeVariant.warning:
+        return BauhausColors.warningDark;
+      case BauhausBadgeVariant.error:
+        return BauhausColors.errorDark;
+      case BauhausBadgeVariant.info:
+        return BauhausColors.infoDark;
     }
   }
 
@@ -78,10 +105,10 @@ class BauhausBadge extends StatelessWidget {
         color: bgColor,
         borderRadius: isPill
             ? BorderRadius.circular(999)
-            : BorderRadius.circular(6),
+            : BorderRadius.circular(8),
         border: borderWidth > 0
             ? Border.all(
-                color: BauhausColors.border.withOpacity(0.5),
+                color: BauhausColors.border.withValues(alpha: 0.5),
                 width: 1.0,
               )
             : null,

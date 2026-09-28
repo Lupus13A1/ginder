@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../models/student_profile.dart';
 import '../models/match_model.dart';
 
@@ -36,6 +37,7 @@ class DatabaseService {
     required String faculty,
     required String major,
     required String year,
+    bool isVerifiedStudent = false,
   }) async {
     DatabaseReference userRef = _db.ref('users/$uid');
 
@@ -49,8 +51,13 @@ class DatabaseService {
       'major': major,
       'year': year,
       'createdAt': ServerValue.timestamp,
-      'isVerifiedStudent': false, // Requires admin/university email validation
+      'isVerifiedStudent': isVerifiedStudent,
     });
+  }
+
+  /// Update verified student status
+  Future<void> updateVerificationStatus(String uid, bool isVerified) async {
+    await _db.ref('users/$uid/isVerifiedStudent').set(isVerified);
   }
 
   /// Save or update full student profile
@@ -61,6 +68,33 @@ class DatabaseService {
     await userRef.update(map);
   }
 
+  /// Update or replace user structured interests
+  Future<void> updateUserInterests(
+    String uid,
+    ProfileInterests interests,
+  ) async {
+    DatabaseReference interestsRef = _db.ref('users/$uid/profileInterests');
+    await interestsRef.set(interests.toMap());
+  }
+
+  /// Update user activities (campus passions/hobbies)
+  Future<void> updateUserActivities(String uid, List<String> activities) async {
+    DatabaseReference activitiesRef = _db.ref('users/$uid/activities');
+    await activitiesRef.set(activities);
+    // Also mirror to 'interests' for backward compatibility
+    await _db.ref('users/$uid/interests').set(activities);
+  }
+
+  /// Fetch structured interests for a user
+  Future<ProfileInterests> getUserInterests(String uid) async {
+    DataSnapshot snapshot = await _db.ref('users/$uid/profileInterests').get();
+    if (snapshot.exists && snapshot.value != null) {
+      final map = _mapFromSnapshot(snapshot.value);
+      return ProfileInterests.fromMap(map);
+    }
+    return const ProfileInterests();
+  }
+
   /// Get a user's profile by UID
   Future<Map<String, dynamic>?> getUserProfile(String uid) async {
     DataSnapshot snapshot = await _db.ref('users/$uid').get();
@@ -69,6 +103,54 @@ class DatabaseService {
       return _mapFromSnapshot(snapshot.value);
     }
     return null;
+  }
+
+  /// Permanently delete user profile and all associated data from Firebase RTDB
+  Future<void> deleteUserData(String uid) async {
+    try {
+      // 1. Delete user profile record
+      await _db.ref('users/$uid').remove();
+
+      // 2. Clear from local memory cache
+      _profileCache.remove(uid);
+
+      // 3. Remove user notifications
+      await _db.ref('notifications/$uid').remove();
+
+      // 4. Remove all swipes where this user was sender or target
+      final swipesSnapshot = await _db.ref('swipes').get();
+      if (swipesSnapshot.exists) {
+        for (final child in swipesSnapshot.children) {
+          final val = child.value;
+          final map = _mapFromSnapshot(val);
+          if (map != null) {
+            final fromUser = map['fromUserId']?.toString();
+            final toUser = map['toUserId']?.toString();
+            if (fromUser == uid || toUser == uid) {
+              await child.ref.remove();
+            }
+          }
+        }
+      }
+
+      // 5. Remove any matches involving this user
+      final matchesSnapshot = await _db.ref('matches').get();
+      if (matchesSnapshot.exists) {
+        for (final child in matchesSnapshot.children) {
+          final val = child.value;
+          final map = _mapFromSnapshot(val);
+          if (map != null) {
+            final usersMap = map['users'];
+            if (usersMap is Map && usersMap.containsKey(uid)) {
+              await child.ref.remove();
+            }
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('Error deleting user data for $uid: $e');
+      rethrow;
+    }
   }
 
   /// Seed sample students into Firebase Realtime Database if database is empty or has only 1 user
@@ -106,9 +188,20 @@ class DatabaseService {
   /// Fetch profiles available for discovery from Firebase RTDB (excluding self, already swiped, and matched)
   Future<List<StudentProfile>> getDiscoverProfiles(String currentUserId) async {
     try {
+      final auth = FirebaseAuth.instance;
+      final authUid = auth.currentUser?.uid;
+      final authEmail = auth.currentUser?.email?.toLowerCase().trim();
+
+      // Collect all possible identifiers of the current user
+      final Set<String> myUids = {
+        if (currentUserId.isNotEmpty && currentUserId != 'my_user_id')
+          currentUserId,
+        if (authUid != null && authUid.isNotEmpty) authUid,
+      };
+
       final Set<String> excludedUserIds = {};
 
-      if (currentUserId.isNotEmpty) {
+      if (myUids.isNotEmpty) {
         // 1. Exclude users we've already swiped on (likes, passes, superlikes)
         final swipesSnapshot = await _db.ref('swipes').get();
         if (swipesSnapshot.exists) {
@@ -119,7 +212,9 @@ class DatabaseService {
               if (map != null) {
                 final fromUser = map['fromUserId']?.toString();
                 final toUser = map['toUserId']?.toString();
-                if (fromUser == currentUserId && toUser != null) {
+                if (fromUser != null &&
+                    myUids.contains(fromUser) &&
+                    toUser != null) {
                   excludedUserIds.add(toUser);
                 }
               }
@@ -136,15 +231,49 @@ class DatabaseService {
               final map = _mapFromSnapshot(val);
               if (map != null) {
                 final usersMap = map['users'];
-                if (usersMap is Map && usersMap.containsKey(currentUserId)) {
+                if (usersMap is Map &&
+                    myUids.any((myId) => usersMap.containsKey(myId))) {
                   usersMap.forEach((uId, _) {
-                    if (uId.toString() != currentUserId) {
+                    if (!myUids.contains(uId.toString())) {
                       excludedUserIds.add(uId.toString());
                     }
                   });
                 }
               }
             }
+          }
+        }
+
+        // 3. Exclude blocked users (both whom I blocked and who blocked me)
+        final blocksSnapshot = await _db.ref('blocks').get();
+        if (blocksSnapshot.exists) {
+          for (final child in blocksSnapshot.children) {
+            final val = child.value;
+            if (val is Map || val is List) {
+              final map = _mapFromSnapshot(val);
+              if (map != null) {
+                final fromUser = map['fromUserId']?.toString();
+                final toUser = map['toUserId']?.toString();
+                if (fromUser != null && toUser != null) {
+                  if (myUids.contains(fromUser)) {
+                    excludedUserIds.add(toUser);
+                  }
+                  if (myUids.contains(toUser)) {
+                    excludedUserIds.add(fromUser);
+                  }
+                }
+              }
+            }
+          }
+        }
+
+        for (final myId in myUids) {
+          final myBlockedSnap = await _db.ref('users/$myId/blockedUsers').get();
+          if (myBlockedSnap.exists && myBlockedSnap.value is Map) {
+            final map = myBlockedSnap.value as Map;
+            map.forEach((blockedId, _) {
+              excludedUserIds.add(blockedId.toString());
+            });
           }
         }
       }
@@ -156,17 +285,36 @@ class DatabaseService {
       if (usersSnapshot.exists) {
         for (final child in usersSnapshot.children) {
           final uid = child.key;
-          if (uid != null &&
-              uid != currentUserId &&
-              !excludedUserIds.contains(uid)) {
-            final val = child.value;
-            final userMap = _mapFromSnapshot(val);
-            if (userMap != null) {
-              try {
-                profiles.add(StudentProfile.fromMap(userMap, id: uid));
-              } catch (e) {
-                debugPrint('Error parsing user profile $uid: $e');
-              }
+          // Must not be current user and must not be in excluded IDs
+          if (uid == null ||
+              myUids.contains(uid) ||
+              excludedUserIds.contains(uid)) {
+            continue;
+          }
+
+          final val = child.value;
+          final userMap = _mapFromSnapshot(val);
+          if (userMap != null) {
+            // Ignore deleted or deactivated profiles
+            if (userMap['isDeleted'] == true) {
+              continue;
+            }
+
+            // Also exclude by email to prevent showing self if UID varied
+            final profileEmail = (userMap['email'] ?? userMap['studentEmail'])
+                ?.toString()
+                .toLowerCase()
+                .trim();
+            if (authEmail != null &&
+                authEmail.isNotEmpty &&
+                profileEmail == authEmail) {
+              continue;
+            }
+
+            try {
+              profiles.add(StudentProfile.fromMap(userMap, id: uid));
+            } catch (e) {
+              debugPrint('Error parsing user profile $uid: $e');
             }
           }
         }
@@ -183,8 +331,25 @@ class DatabaseService {
   // 2. SWIPES & MATCHING LOGIC
   // ---------------------------------------------------------------------------
 
+  /// Check if two users have blocked each other
+  Future<bool> isUserBlocked(String uid1, String uid2) async {
+    try {
+      final b1 = await _db.ref('blocks/${uid1}_$uid2').get();
+      if (b1.exists) return true;
+      final b2 = await _db.ref('blocks/${uid2}_$uid1').get();
+      if (b2.exists) return true;
+      final u1 = await _db.ref('users/$uid1/blockedUsers/$uid2').get();
+      if (u1.exists && u1.value == true) return true;
+      final u2 = await _db.ref('users/$uid2/blockedUsers/$uid1').get();
+      if (u2.exists && u2.value == true) return true;
+    } catch (_) {}
+    return false;
+  }
+
   /// Record a right swipe (Like) and return true if mutual match occurs
   Future<bool> swipeRight(String myUid, String targetUid) async {
+    if (await isUserBlocked(myUid, targetUid)) return false;
+
     String swipeId = '${myUid}_$targetUid';
 
     await _db.ref('swipes/$swipeId').set({
@@ -212,6 +377,8 @@ class DatabaseService {
 
   /// Record a super like (Swipe Up) and create a match room
   Future<bool> superLike(String myUid, String targetUid) async {
+    if (await isUserBlocked(myUid, targetUid)) return false;
+
     String swipeId = '${myUid}_$targetUid';
 
     await _db.ref('swipes/$swipeId').set({
@@ -236,6 +403,69 @@ class DatabaseService {
     DataSnapshot matchSnap = await _db.ref('matches/$matchId').get();
     if (matchSnap.exists) {
       await _db.ref('matches/$matchId').remove();
+    }
+  }
+
+  /// Unmatch user:
+  /// - Removes match room and all messages in matches/$matchId
+  /// - Removes mutual swipe records (swipes/${myUid}_$targetUid and swipes/${targetUid}_$myUid)
+  ///   so they can encounter each other again in Discover in the future.
+  Future<void> unmatchUser(String myUid, String targetUid) async {
+    try {
+      // 1. Delete match room and its messages
+      List<String> users = [myUid, targetUid]..sort();
+      String matchId = '${users[0]}_${users[1]}';
+      await _db.ref('matches/$matchId').remove();
+
+      // 2. Remove mutual swipes so they can encounter each other again in Discover
+      await _db.ref('swipes/${myUid}_$targetUid').remove();
+      await _db.ref('swipes/${targetUid}_$myUid').remove();
+    } catch (e) {
+      debugPrint('Error unmatching user: $e');
+    }
+  }
+
+  /// Block user:
+  /// - Immediately unmatches (removes match room and all messages)
+  /// - Permanently records block in blocks/ and users/$myUid/blockedUsers
+  /// - Records swipe as type 'block' so they never appear in Discover and never match again
+  Future<void> blockUser(String myUid, String targetUid) async {
+    try {
+      // 1. Remove match room and messages
+      List<String> users = [myUid, targetUid]..sort();
+      String matchId = '${users[0]}_${users[1]}';
+      await _db.ref('matches/$matchId').remove();
+
+      // 2. Record in blocks node
+      await _db.ref('blocks/${myUid}_$targetUid').set({
+        'fromUserId': myUid,
+        'toUserId': targetUid,
+        'timestamp': ServerValue.timestamp,
+      });
+
+      // 3. Record in user profile
+      await _db.ref('users/$myUid/blockedUsers/$targetUid').set(true);
+
+      // 4. Record swipe as 'block'
+      await _db.ref('swipes/${myUid}_$targetUid').set({
+        'fromUserId': myUid,
+        'toUserId': targetUid,
+        'type': 'block',
+        'timestamp': ServerValue.timestamp,
+      });
+    } catch (e) {
+      debugPrint('Error blocking user: $e');
+    }
+  }
+
+  /// Unblock user
+  Future<void> unblockUser(String myUid, String targetUid) async {
+    try {
+      await _db.ref('blocks/${myUid}_$targetUid').remove();
+      await _db.ref('users/$myUid/blockedUsers/$targetUid').remove();
+      await _db.ref('swipes/${myUid}_$targetUid').remove();
+    } catch (e) {
+      debugPrint('Error unblocking user: $e');
     }
   }
 
@@ -266,6 +496,8 @@ class DatabaseService {
 
   /// Internal function to check if the target also liked the user
   Future<bool> _checkForMatch(String myUid, String targetUid) async {
+    if (await isUserBlocked(myUid, targetUid)) return false;
+
     String reverseSwipeId = '${targetUid}_$myUid';
     DataSnapshot reverseSwipe = await _db.ref('swipes/$reverseSwipeId').get();
 

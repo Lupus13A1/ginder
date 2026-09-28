@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../theme/bauhaus_colors.dart';
 import '../theme/bauhaus_text_styles.dart';
 import '../widgets/bauhaus_shapes.dart';
@@ -46,11 +47,33 @@ class _SplashScreenState extends State<SplashScreen>
     super.dispose();
   }
 
-  void _proceed() {
+  Future<void> _proceed() async {
     final auth = context.read<AuthProvider>();
-    if (!auth.isOnboarded) {
-      Navigator.of(context).pushReplacementNamed(AppRoutes.onboarding);
-    } else if (auth.isAuthenticated) {
+
+    // Make sure latest onboarding status from SharedPreferences is loaded
+    if (!auth.hasLoadedOnboarded) {
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        if (prefs.getBool('has_completed_onboarding') == true) {
+          await auth.completeOnboarding();
+        }
+      } catch (_) {}
+    }
+
+    // 1. New users who haven't completed onboarding and are not authenticated -> Onboarding
+    if (!auth.isOnboarded && !auth.isAuthenticated) {
+      if (mounted) {
+        Navigator.of(context).pushReplacementNamed(AppRoutes.onboarding);
+      }
+      return;
+    }
+
+    // 2. Authenticated user -> Go to app
+    if (auth.isAuthenticated) {
+      // Sync latest verification status from Firebase Auth
+      await auth.reloadUser();
+      if (!mounted) return;
+
       // Gate: must verify email before accessing the app
       if (!auth.isEmailVerified) {
         Navigator.of(context).pushReplacementNamed(AppRoutes.emailVerification);
@@ -60,7 +83,10 @@ class _SplashScreenState extends State<SplashScreen>
         Navigator.of(context).pushReplacementNamed(AppRoutes.home);
       }
     } else {
-      Navigator.of(context).pushReplacementNamed(AppRoutes.login);
+      // 3. User has already completed onboarding previously -> Go directly to Login
+      if (mounted) {
+        Navigator.of(context).pushReplacementNamed(AppRoutes.login);
+      }
     }
   }
 
@@ -81,15 +107,23 @@ class _SplashScreenState extends State<SplashScreen>
                   const GeometricBrandMark(size: 16, spacing: 8),
                   Container(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
+                      horizontal: 10,
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
                       color: BauhausColors.cardYellow,
+                      borderRadius: BorderRadius.circular(999),
                       border: Border.all(
                         color: BauhausColors.border,
-                        width: 2.0,
+                        width: 1.0,
                       ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.04),
+                          blurRadius: 3,
+                          offset: const Offset(0, 1),
+                        ),
+                      ],
                     ),
                     child: Text(
                       'EST. 2026 / CAMPUS EDITION',
@@ -117,17 +151,24 @@ class _SplashScreenState extends State<SplashScreen>
                   child: Container(
                     width: 240,
                     height: 240,
+                    clipBehavior: Clip.antiAlias,
                     decoration: BoxDecoration(
                       color: BauhausColors.surface,
+                      borderRadius: BorderRadius.circular(24),
                       border: Border.all(
                         color: BauhausColors.border,
-                        width: 4.0,
+                        width: 1.0,
                       ),
-                      boxShadow: const [
+                      boxShadow: [
                         BoxShadow(
-                          color: BauhausColors.border,
-                          offset: Offset(8, 8),
-                          blurRadius: 0,
+                          color: Colors.black.withValues(alpha: 0.08),
+                          blurRadius: 16,
+                          offset: const Offset(0, 8),
+                        ),
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.04),
+                          blurRadius: 6,
+                          offset: const Offset(0, 2),
                         ),
                       ],
                     ),
@@ -145,7 +186,7 @@ class _SplashScreenState extends State<SplashScreen>
                               shape: BoxShape.circle,
                               border: Border.all(
                                 color: BauhausColors.border,
-                                width: 3.0,
+                                width: 1.5,
                               ),
                             ),
                           ),
@@ -159,10 +200,10 @@ class _SplashScreenState extends State<SplashScreen>
                             height: 90,
                             decoration: BoxDecoration(
                               color: BauhausColors.primaryBlue,
-                              shape: BoxShape.rectangle,
+                              borderRadius: BorderRadius.circular(12),
                               border: Border.all(
                                 color: BauhausColors.border,
-                                width: 3.0,
+                                width: 1.5,
                               ),
                             ),
                           ),
@@ -174,29 +215,7 @@ class _SplashScreenState extends State<SplashScreen>
                           child: BauhausTriangle(
                             size: 100,
                             color: BauhausColors.primaryYellow,
-                            borderWidth: 3.0,
-                          ),
-                        ),
-                        // Center GINDER Monogram Box
-                        Center(
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 14,
-                              vertical: 8,
-                            ),
-                            decoration: BoxDecoration(
-                              color: BauhausColors.foreground,
-                              border: Border.all(
-                                color: Colors.white,
-                                width: 2.0,
-                              ),
-                            ),
-                            child: Text(
-                              'GINDER',
-                              style: BauhausTextStyles.headlineLarge(
-                                color: Colors.white,
-                              ).copyWith(letterSpacing: 3.0),
-                            ),
+                            borderWidth: 1.5,
                           ),
                         ),
                       ],

@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'theme/bauhaus_colors.dart';
 import 'theme/bauhaus_theme.dart';
+import 'providers/app_config_provider.dart';
 import 'providers/auth_provider.dart';
 import 'providers/discover_provider.dart';
 import 'providers/chat_provider.dart';
@@ -30,16 +33,37 @@ void main() async {
     await GoogleSignIn.instance.initialize(hostedDomain: 'email.kmutnb.ac.th');
   }
 
+  final prefs = await SharedPreferences.getInstance();
+  final appConfig = AppConfigProvider(prefs);
+  BauhausColors.isDark = appConfig.isDark;
+
   SystemChrome.setSystemUIOverlayStyle(
-    const SystemUiOverlayStyle(
+    SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
-      statusBarIconBrightness: Brightness.dark,
-      systemNavigationBarColor: Colors.white,
-      systemNavigationBarIconBrightness: Brightness.dark,
+      statusBarIconBrightness: appConfig.isDark
+          ? Brightness.light
+          : Brightness.dark,
+      systemNavigationBarColor: appConfig.isDark
+          ? const Color(0xFF0F172A)
+          : Colors.white,
+      systemNavigationBarIconBrightness: appConfig.isDark
+          ? Brightness.light
+          : Brightness.dark,
     ),
   );
 
-  runApp(const GinderApp());
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider.value(value: appConfig),
+        ChangeNotifierProvider(create: (_) => AuthProvider(prefs)),
+        ChangeNotifierProvider(create: (_) => DiscoverProvider()),
+        ChangeNotifierProvider(create: (_) => ChatProvider()),
+        ChangeNotifierProvider(create: (_) => NotificationProvider()),
+      ],
+      child: const GinderApp(),
+    ),
+  );
 }
 
 class GinderApp extends StatelessWidget {
@@ -47,21 +71,20 @@ class GinderApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => AuthProvider()),
-        ChangeNotifierProvider(create: (_) => DiscoverProvider()),
-        ChangeNotifierProvider(create: (_) => ChatProvider()),
-        ChangeNotifierProvider(create: (_) => NotificationProvider()),
-      ],
-      child: MaterialApp(
-        title: 'GINDER',
-        debugShowCheckedModeBanner: false,
-        theme: BauhausTheme.themeData,
-        initialRoute: AppRoutes.splash,
-        onGenerateRoute: AppRoutes.onGenerateRoute,
-        onUnknownRoute: AppRoutes.onUnknownRoute,
-      ),
+    final appConfig = Provider.of<AppConfigProvider?>(context);
+    final themeMode = appConfig?.themeMode ?? ThemeMode.light;
+    final language = appConfig?.language ?? 'en';
+
+    return MaterialApp(
+      title: 'GINDER',
+      debugShowCheckedModeBanner: false,
+      theme: BauhausTheme.lightTheme,
+      darkTheme: BauhausTheme.darkTheme,
+      themeMode: themeMode,
+      locale: Locale(language),
+      initialRoute: AppRoutes.splash,
+      onGenerateRoute: AppRoutes.onGenerateRoute,
+      onUnknownRoute: AppRoutes.onUnknownRoute,
     );
   }
 }

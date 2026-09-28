@@ -5,16 +5,16 @@ import '../theme/bauhaus_text_styles.dart';
 class BauhausBottomSheet extends StatelessWidget {
   final String title;
   final Widget content;
-  final Color headerColor;
-  final Color headerTextColor;
+  final Color? headerColor;
+  final Color? headerTextColor;
   final Widget? trailing;
 
   const BauhausBottomSheet({
     super.key,
     required this.title,
     required this.content,
-    this.headerColor = BauhausColors.primaryYellow,
-    this.headerTextColor = BauhausColors.foreground,
+    this.headerColor,
+    this.headerTextColor,
     this.trailing,
   });
 
@@ -22,8 +22,8 @@ class BauhausBottomSheet extends StatelessWidget {
     required BuildContext context,
     required String title,
     required Widget content,
-    Color headerColor = BauhausColors.primaryYellow,
-    Color headerTextColor = BauhausColors.foreground,
+    Color? headerColor,
+    Color? headerTextColor,
     Widget? trailing,
     bool isScrollControlled = true,
   }) {
@@ -43,10 +43,13 @@ class BauhausBottomSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final effHeaderColor = headerColor ?? BauhausColors.surface;
+    final effHeaderTextColor = headerTextColor ?? BauhausColors.foreground;
+
     return Container(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: BauhausColors.surface,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
       child: SafeArea(
         top: false,
@@ -73,10 +76,8 @@ class BauhausBottomSheet extends StatelessWidget {
                 vertical: 16.0,
               ),
               decoration: BoxDecoration(
-                color: headerColor == BauhausColors.primaryYellow
-                    ? BauhausColors.surface
-                    : headerColor,
-                border: const Border(
+                color: effHeaderColor,
+                border: Border(
                   bottom: BorderSide(color: BauhausColors.border, width: 1.0),
                 ),
                 borderRadius: const BorderRadius.vertical(
@@ -89,23 +90,21 @@ class BauhausBottomSheet extends StatelessWidget {
                     child: Text(
                       title,
                       style: BauhausTextStyles.title(
-                        color: headerColor == BauhausColors.primaryYellow
-                            ? BauhausColors.foreground
-                            : headerTextColor,
+                        color: effHeaderTextColor,
                       ).copyWith(fontWeight: FontWeight.w600),
                     ),
                   ),
-                  if (trailing != null) trailing!,
+                  ?trailing,
                   const SizedBox(width: 8),
                   GestureDetector(
                     onTap: () => Navigator.of(context).pop(),
                     child: Container(
                       padding: const EdgeInsets.all(4),
-                      decoration: const BoxDecoration(
+                      decoration: BoxDecoration(
                         color: BauhausColors.muted,
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.close,
                         size: 18,
                         color: BauhausColors.foreground,

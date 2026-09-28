@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../theme/bauhaus_colors.dart';
 import '../../theme/bauhaus_text_styles.dart';
-import '../../widgets/bauhaus_shapes.dart';
 import '../../models/notification_model.dart';
 import '../../providers/notification_provider.dart';
 
@@ -25,7 +24,7 @@ class NotificationsScreen extends StatelessWidget {
             // Header
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 color: BauhausColors.surface,
                 border: Border(
                   bottom: BorderSide(color: BauhausColors.border, width: 1.0),
@@ -115,7 +114,7 @@ class NotificationsScreen extends StatelessWidget {
               ),
             ),
 
-            const Divider(
+            Divider(
               thickness: 2.0,
               color: BauhausColors.border,
               height: 2,
@@ -158,14 +157,14 @@ class NotificationsScreen extends StatelessWidget {
           border: Border.all(
             color: item.isRead
                 ? BauhausColors.border
-                : item.categoryColor.withOpacity(0.5),
+                : item.categoryColor.withValues(alpha: 0.5),
             width: 1.0,
           ),
           boxShadow: [
             BoxShadow(
               color: item.isRead
-                  ? Colors.black.withOpacity(0.02)
-                  : item.categoryColor.withOpacity(0.1),
+                  ? Colors.black.withValues(alpha: 0.02)
+                  : item.categoryColor.withValues(alpha: 0.1),
               offset: const Offset(0, 4),
               blurRadius: 12,
             ),
@@ -181,7 +180,7 @@ class NotificationsScreen extends StatelessWidget {
                 width: 44,
                 height: 44,
                 decoration: BoxDecoration(
-                  color: item.categoryColor.withOpacity(0.1),
+                  color: item.categoryColor.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(item.iconData, size: 22, color: item.categoryColor),

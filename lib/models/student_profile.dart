@@ -1,3 +1,21 @@
+import 'profile_interests.dart';
+export 'profile_interests.dart';
+
+/// Represents an item in the dynamic profile completeness checklist
+class ProfileChecklistItem {
+  final String title;
+  final int weightPercent;
+  final bool isCompleted;
+  final String sectionKey;
+
+  const ProfileChecklistItem({
+    required this.title,
+    required this.weightPercent,
+    required this.isCompleted,
+    this.sectionKey = '',
+  });
+}
+
 /// Data model representing a university student profile on Ginder
 class StudentProfile {
   final String id;
@@ -11,8 +29,10 @@ class StudentProfile {
   final String studentEmail;
   final String bio;
   final List<String> photos;
-  final List<String> interests;
+  final List<String> interests; // Campus activities / passions
   final List<String> commonInterests;
+  final ProfileInterests
+  profileInterests; // Tinder-style lifestyle & relationship interests
   final String anthemSong;
   final String anthemArtist;
   final String favoriteMovie;
@@ -21,7 +41,134 @@ class StudentProfile {
   final bool isVerifiedStudent;
   final int matchesCount;
   final int likesCount;
-  final double profileCompleteness; // 0.0 to 1.0
+
+  /// Alias for campus activities/passions to separate clearly from profileInterests
+  List<String> get activities => interests;
+
+  /// Dynamically calculated profile completeness score (0.0 to 1.0)
+  double get profileCompleteness => calculatedCompleteness;
+
+  /// Calculates dynamic completeness based on actual profile data (0.0 to 1.0)
+  double get calculatedCompleteness {
+    double score = 0.0;
+
+    // 1. Photos (20% total)
+    if (photos.isNotEmpty) {
+      score += 0.10; // At least 1 photo
+      if (photos.length >= 3) {
+        score += 0.10; // 3 or more photos
+      }
+    }
+
+    // 2. Education & Verification (15% total)
+    if (faculty.trim().isNotEmpty && faculty.trim() != 'All') {
+      score += 0.05;
+    }
+    if (major.trim().isNotEmpty && major.trim() != '-') {
+      score += 0.05;
+    }
+    if (isVerifiedStudent) {
+      score += 0.05;
+    }
+
+    // 3. Bio / About Me (15% total)
+    if (bio.trim().length >= 10) {
+      score += 0.15;
+    } else if (bio.trim().isNotEmpty) {
+      score += 0.08;
+    }
+
+    // 4. Campus Activities & Passions (15% total)
+    if (activities.length >= 3) {
+      score += 0.15;
+    } else if (activities.isNotEmpty) {
+      score += (activities.length / 3.0) * 0.15;
+    }
+
+    // 5. Lifestyle & Dating Goal (20% total)
+    final lifestyleCount = profileInterests.displayItems.length;
+    if (lifestyleCount >= 4) {
+      score += 0.20;
+    } else if (lifestyleCount > 0) {
+      score += (lifestyleCount / 4.0) * 0.20;
+    }
+
+    // 6. Campus Vibes (15% total)
+    if (anthemSong.trim().isNotEmpty) {
+      score += 0.10;
+    }
+    if (campusHangout.trim().isNotEmpty) {
+      score += 0.05;
+    }
+
+    return score.clamp(0.0, 1.0);
+  }
+
+  /// Breakdown of criteria for the profile completeness checklist
+  List<ProfileChecklistItem> get completenessChecklist {
+    return [
+      ProfileChecklistItem(
+        title: 'At least 1 profile photo',
+        weightPercent: 10,
+        isCompleted: photos.isNotEmpty,
+        sectionKey: 'photos',
+      ),
+      ProfileChecklistItem(
+        title: '3 or more profile photos',
+        weightPercent: 10,
+        isCompleted: photos.length >= 3,
+        sectionKey: 'photos',
+      ),
+      ProfileChecklistItem(
+        title: 'Specify your faculty',
+        weightPercent: 5,
+        isCompleted: faculty.trim().isNotEmpty && faculty.trim() != 'All',
+        sectionKey: 'faculty',
+      ),
+      ProfileChecklistItem(
+        title: 'Specify your major',
+        weightPercent: 5,
+        isCompleted: major.trim().isNotEmpty && major.trim() != '-',
+        sectionKey: 'major',
+      ),
+      ProfileChecklistItem(
+        title: 'Verify student email (@email.kmutnb.ac.th)',
+        weightPercent: 5,
+        isCompleted: isVerifiedStudent,
+        sectionKey: 'email',
+      ),
+      ProfileChecklistItem(
+        title: 'Write campus bio (at least 10 characters)',
+        weightPercent: 15,
+        isCompleted: bio.trim().length >= 10,
+        sectionKey: 'bio',
+      ),
+      ProfileChecklistItem(
+        title: 'Select campus activities (at least 3)',
+        weightPercent: 15,
+        isCompleted: activities.length >= 3,
+        sectionKey: 'activities',
+      ),
+      ProfileChecklistItem(
+        title: 'Fill lifestyle & interests (at least 4)',
+        weightPercent: 20,
+        isCompleted: profileInterests.displayItems.length >= 4,
+        sectionKey: 'lifestyle',
+      ),
+      ProfileChecklistItem(
+        title: 'Pick campus anthem song',
+        weightPercent: 10,
+        isCompleted: anthemSong.trim().isNotEmpty,
+        sectionKey: 'anthem',
+      ),
+      ProfileChecklistItem(
+        title: 'Specify campus hangout spot',
+        weightPercent: 5,
+        isCompleted: campusHangout.trim().isNotEmpty,
+        sectionKey: 'hangout',
+      ),
+    ];
+  }
 
   const StudentProfile({
     required this.id,
@@ -36,15 +183,15 @@ class StudentProfile {
     required this.photos,
     required this.interests,
     this.commonInterests = const [],
+    this.profileInterests = const ProfileInterests(),
     this.anthemSong = '',
     this.anthemArtist = '',
     this.favoriteMovie = '',
     this.campusHangout = '',
-    this.distanceKm = 0.5,
-    this.isVerifiedStudent = true,
-    this.matchesCount = 14,
-    this.likesCount = 48,
-    this.profileCompleteness = 0.95,
+    this.distanceKm = 0.0,
+    this.isVerifiedStudent = false,
+    this.matchesCount = 0,
+    this.likesCount = 0,
   });
 
   StudentProfile copyWith({
@@ -59,7 +206,9 @@ class StudentProfile {
     String? bio,
     List<String>? photos,
     List<String>? interests,
+    List<String>? activities,
     List<String>? commonInterests,
+    ProfileInterests? profileInterests,
     String? anthemSong,
     String? anthemArtist,
     String? favoriteMovie,
@@ -68,7 +217,6 @@ class StudentProfile {
     bool? isVerifiedStudent,
     int? matchesCount,
     int? likesCount,
-    double? profileCompleteness,
   }) {
     return StudentProfile(
       id: id ?? this.id,
@@ -81,8 +229,9 @@ class StudentProfile {
       studentEmail: studentEmail ?? this.studentEmail,
       bio: bio ?? this.bio,
       photos: photos ?? this.photos,
-      interests: interests ?? this.interests,
+      interests: activities ?? interests ?? this.interests,
       commonInterests: commonInterests ?? this.commonInterests,
+      profileInterests: profileInterests ?? this.profileInterests,
       anthemSong: anthemSong ?? this.anthemSong,
       anthemArtist: anthemArtist ?? this.anthemArtist,
       favoriteMovie: favoriteMovie ?? this.favoriteMovie,
@@ -91,7 +240,6 @@ class StudentProfile {
       isVerifiedStudent: isVerifiedStudent ?? this.isVerifiedStudent,
       matchesCount: matchesCount ?? this.matchesCount,
       likesCount: likesCount ?? this.likesCount,
-      profileCompleteness: profileCompleteness ?? this.profileCompleteness,
     );
   }
 
@@ -109,6 +257,15 @@ class StudentProfile {
         ? map['nickname'].toString()
         : name.split(' ').first;
 
+    final rawActivities = map['activities'] ?? map['interests'];
+    final parsedInterests = parseList(rawActivities);
+
+    final rawInterestsData =
+        map['profileInterests'] ?? map['lifestyle'] ?? map['interestsData'];
+    final profileInterests = ProfileInterests.fromMap(
+      rawInterestsData is Map ? rawInterestsData : null,
+    );
+
     return StudentProfile(
       id: uid,
       name: name,
@@ -123,15 +280,16 @@ class StudentProfile {
           map['email']?.toString() ?? map['studentEmail']?.toString() ?? '',
       bio: map['bio']?.toString() ?? '',
       photos: parseList(map['photos']),
-      interests: parseList(map['interests']),
+      interests: parsedInterests,
       commonInterests: parseList(map['commonInterests']),
+      profileInterests: profileInterests,
       anthemSong: map['anthemSong']?.toString() ?? '',
       anthemArtist: map['anthemArtist']?.toString() ?? '',
       favoriteMovie: map['favoriteMovie']?.toString() ?? '',
       campusHangout: map['campusHangout']?.toString() ?? '',
       distanceKm: (map['distanceKm'] is num)
           ? (map['distanceKm'] as num).toDouble()
-          : double.tryParse(map['distanceKm']?.toString() ?? '0.8') ?? 0.8,
+          : double.tryParse(map['distanceKm']?.toString() ?? '0.0') ?? 0.0,
       isVerifiedStudent: map['isVerifiedStudent'] == true,
       matchesCount: (map['matchesCount'] is num)
           ? (map['matchesCount'] as num).toInt()
@@ -139,9 +297,6 @@ class StudentProfile {
       likesCount: (map['likesCount'] is num)
           ? (map['likesCount'] as num).toInt()
           : 0,
-      profileCompleteness: (map['profileCompleteness'] is num)
-          ? (map['profileCompleteness'] as num).toDouble()
-          : 0.85,
     );
   }
 
@@ -157,7 +312,9 @@ class StudentProfile {
       'email': studentEmail,
       'bio': bio,
       'photos': photos,
+      'activities': interests,
       'interests': interests,
+      'profileInterests': profileInterests.toMap(),
       'commonInterests': commonInterests,
       'anthemSong': anthemSong,
       'anthemArtist': anthemArtist,
@@ -197,6 +354,22 @@ class StudentProfile {
         'Sketching',
       ],
       commonInterests: ['Architecture', 'Indie Rock', 'Matcha Latte'],
+      profileInterests: ProfileInterests(
+        datingFor: 'Long-term relationship',
+        lookingFor: 'Everyone',
+        languages: ['Thai', 'English'],
+        zodiac: 'Virgo ♍',
+        education: 'Undergraduate / Bachelor',
+        familyPlans: 'Not sure yet',
+        communicationStyle: 'Better in person',
+        loveStyle: 'Quality time',
+        bloodType: 'O',
+        pets: 'Cat person 🐱',
+        drinking: 'Special occasions only',
+        smoking: 'Non-smoker',
+        workout: 'Often (3-4x/week)',
+        socialMedia: 'Active on Instagram',
+      ),
       anthemSong: 'Sparks',
       anthemArtist: 'Coldplay',
       favoriteMovie: 'Grand Budapest Hotel',
@@ -230,6 +403,21 @@ class StudentProfile {
         'Hackathons',
       ],
       commonInterests: ['Coding', 'Board Games', 'Specialty Coffee'],
+      profileInterests: ProfileInterests(
+        datingFor: 'Long-term, open to short',
+        lookingFor: 'Women',
+        languages: ['Thai', 'English', 'Japanese'],
+        zodiac: 'Gemini ♊',
+        education: 'Undergraduate / Bachelor',
+        communicationStyle: 'Big time texter',
+        loveStyle: 'Acts of service',
+        bloodType: 'B',
+        pets: 'Dog lover 🐶',
+        drinking: 'Socially on weekends',
+        smoking: 'Non-smoker',
+        workout: 'Everyday',
+        socialMedia: 'LinkedIn professional',
+      ),
       anthemSong: 'Midnight City',
       anthemArtist: 'M83',
       favoriteMovie: 'Interstellar',
@@ -263,6 +451,21 @@ class StudentProfile {
         'Spotify Playlists',
       ],
       commonInterests: ['Cinema', 'Spotify Playlists', 'Vintage Thrift'],
+      profileInterests: ProfileInterests(
+        datingFor: 'New friends',
+        lookingFor: 'Everyone',
+        languages: ['Thai', 'English', 'Korean'],
+        zodiac: 'Pisces ♓',
+        education: 'Undergraduate / Bachelor',
+        communicationStyle: 'Phone caller',
+        loveStyle: 'Words of affirmation',
+        bloodType: 'A',
+        pets: 'Cat person 🐱',
+        drinking: 'Special occasions only',
+        smoking: 'Non-smoker',
+        workout: 'Sometimes (1-2x/week)',
+        socialMedia: 'Spotify playlist curator',
+      ),
       anthemSong: 'About You',
       anthemArtist: 'The 1975',
       favoriteMovie: 'La La Land',
@@ -295,6 +498,21 @@ class StudentProfile {
         'Podcasts',
       ],
       commonInterests: ['Espresso', 'Running', 'Podcasts'],
+      profileInterests: ProfileInterests(
+        datingFor: 'Long-term relationship',
+        lookingFor: 'Women',
+        languages: ['Thai', 'English'],
+        zodiac: 'Capricorn ♑',
+        education: 'Doctorate / PhD',
+        communicationStyle: 'Bad texter',
+        loveStyle: 'Quality time',
+        bloodType: 'AB',
+        pets: 'Want a pet',
+        drinking: 'Special occasions only',
+        smoking: 'Non-smoker',
+        workout: 'Everyday',
+        socialMedia: 'Minimal social media',
+      ),
       anthemSong: 'Slow Dancing in a Burning Room',
       anthemArtist: 'John Mayer',
       favoriteMovie: 'Good Will Hunting',
@@ -327,6 +545,21 @@ class StudentProfile {
         'Networking',
       ],
       commonInterests: ['Startups', 'Modern Art', 'Pastry Baking'],
+      profileInterests: ProfileInterests(
+        datingFor: 'Long-term relationship',
+        lookingFor: 'Men',
+        languages: ['Thai', 'English', 'Chinese (Mandarin)'],
+        zodiac: 'Leo ♌',
+        education: 'Undergraduate / Bachelor',
+        communicationStyle: 'Big time texter',
+        loveStyle: 'Receiving gifts',
+        bloodType: 'B',
+        pets: 'Both dogs & cats 🐾',
+        drinking: 'Socially on weekends',
+        smoking: 'Non-smoker',
+        workout: 'Often (3-4x/week)',
+        socialMedia: 'Active on Instagram',
+      ),
       anthemSong: 'Cruel Summer',
       anthemArtist: 'Taylor Swift',
       favoriteMovie: 'The Devil Wears Prada',
@@ -359,6 +592,21 @@ class StudentProfile {
         'Gym Workout',
       ],
       commonInterests: ['Ramen', 'Astronomy', 'Gym Workout'],
+      profileInterests: ProfileInterests(
+        datingFor: 'Still figuring it out',
+        lookingFor: 'Everyone',
+        languages: ['Thai', 'English', 'Japanese'],
+        zodiac: 'Aquarius ♒',
+        education: 'Undergraduate / Bachelor',
+        communicationStyle: 'Better in person',
+        loveStyle: 'Physical touch',
+        bloodType: 'O',
+        pets: 'Reptiles / Fish / Birds 🦜',
+        drinking: 'Socially on weekends',
+        smoking: 'Social smoker',
+        workout: 'Often (3-4x/week)',
+        socialMedia: 'X (Twitter) active',
+      ),
       anthemSong: 'Resonance',
       anthemArtist: 'HOME',
       favoriteMovie: 'Blade Runner 2049',
@@ -394,6 +642,21 @@ class StudentProfile {
       'Running',
     ],
     commonInterests: [],
+    profileInterests: ProfileInterests(
+      datingFor: 'Long-term, open to short',
+      lookingFor: 'Everyone',
+      languages: ['Thai', 'English'],
+      zodiac: 'Scorpio ♏',
+      education: 'Undergraduate / Bachelor',
+      communicationStyle: 'Better in person',
+      loveStyle: 'Quality time',
+      bloodType: 'O',
+      pets: 'Cat person 🐱',
+      drinking: 'Socially on weekends',
+      smoking: 'Non-smoker',
+      workout: 'Often (3-4x/week)',
+      socialMedia: 'Active on Instagram',
+    ),
     anthemSong: 'Blue Monday',
     anthemArtist: 'New Order',
     favoriteMovie: 'Metropolis (1927)',
@@ -402,6 +665,5 @@ class StudentProfile {
     isVerifiedStudent: true,
     matchesCount: 16,
     likesCount: 58,
-    profileCompleteness: 0.92,
   );
 }

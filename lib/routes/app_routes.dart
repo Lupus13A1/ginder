@@ -28,7 +28,6 @@ class AppRoutes {
   // ── Main Tabs (Shell) ──────────────────────────────────
   static const String home = '/home';
   static const String discover = '/discover';
-  static const String explore = '/explore';
   static const String matches = '/matches';
   static const String notifications = '/notifications';
   static const String profile = '/profile';
@@ -50,11 +49,13 @@ class AppRoutes {
     profileSetup: (_) => const ProfileSetupScreen(),
     home: (_) => const MainNavShell(),
     discover: (_) => const MainNavShell(initialIndex: 0),
-    explore: (_) => const MainNavShell(initialIndex: 1),
-    matches: (_) => const MainNavShell(initialIndex: 2),
-    notifications: (_) => const MainNavShell(initialIndex: 3),
-    profile: (_) => const MainNavShell(initialIndex: 4),
-    editProfile: (_) => const EditProfileScreen(),
+    matches: (_) => const MainNavShell(initialIndex: 1),
+    notifications: (_) => const MainNavShell(initialIndex: 2),
+    profile: (_) => const MainNavShell(initialIndex: 3),
+    editProfile: (context) {
+      final args = ModalRoute.of(context)?.settings.arguments;
+      return EditProfileScreen(initialSection: args is String ? args : null);
+    },
     settings: (_) => const SettingsScreen(),
     safety: (_) => const SafetyReportScreen(),
   };

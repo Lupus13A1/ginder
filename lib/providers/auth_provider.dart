@@ -2,15 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/student_profile.dart';
 import '../services/database_service.dart';
 
 class AuthProvider extends ChangeNotifier {
+  static const String _onboardingCompleteKey = 'has_completed_onboarding';
+  static const String _blockedUsersKey = 'blocked_users_list';
+
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final DatabaseService _db = DatabaseService();
 
   StudentProfile _currentUser = StudentProfile.currentUser;
   bool _isProfileSetupComplete = false;
+  bool _isOnboarded = false;
+  bool _hasLoadedOnboarded = false;
 
   // Settings
   double _maxDistanceKm = 5.0;
@@ -23,34 +29,102 @@ class AuthProvider extends ChangeNotifier {
   bool _notifyLikes = true;
   final List<String> _blockedUsers = ['blocked_user_99'];
 
-  AuthProvider() {
+  AuthProvider([SharedPreferences? prefs]) {
+    if (prefs != null) {
+      _isOnboarded = prefs.getBool(_onboardingCompleteKey) ?? false;
+      _hasLoadedOnboarded = true;
+      final list = prefs.getStringList(_blockedUsersKey);
+      if (list != null) {
+        for (final uid in list) {
+          if (!_blockedUsers.contains(uid)) {
+            _blockedUsers.add(uid);
+          }
+        }
+      }
+    } else {
+      _loadOnboardedState();
+      _loadBlockedUsers();
+    }
     _auth.authStateChanges().listen((User? user) async {
       if (user != null) {
+        if (!_isOnboarded) {
+          await completeOnboarding();
+        }
         await _fetchUserProfile(user.uid);
       }
       notifyListeners();
     });
   }
 
+  Future<void> _loadBlockedUsers() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final list = prefs.getStringList(_blockedUsersKey);
+      if (list != null) {
+        for (final uid in list) {
+          if (!_blockedUsers.contains(uid)) {
+            _blockedUsers.add(uid);
+          }
+        }
+        notifyListeners();
+      }
+    } catch (e) {
+      debugPrint('Error loading blocked users: $e');
+    }
+  }
+
+  Future<void> _loadOnboardedState() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      _isOnboarded = prefs.getBool(_onboardingCompleteKey) ?? false;
+      _hasLoadedOnboarded = true;
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Error loading onboarding state: $e');
+      _hasLoadedOnboarded = true;
+    }
+  }
+
   Future<void> _fetchUserProfile(String uid) async {
     try {
       final data = await _db.getUserProfile(uid);
+      final isEmailVerified = _auth.currentUser?.emailVerified ?? false;
       if (data != null) {
         _currentUser = StudentProfile.fromMap(data, id: uid);
+        if (isEmailVerified && !_currentUser.isVerifiedStudent) {
+          _currentUser = _currentUser.copyWith(isVerifiedStudent: true);
+          _db.updateVerificationStatus(uid, true);
+        }
         _isProfileSetupComplete = _currentUser.photos.isNotEmpty;
       } else {
         _isProfileSetupComplete = false;
-        _currentUser = _currentUser.copyWith(id: uid);
+        _currentUser = _currentUser.copyWith(
+          id: uid,
+          isVerifiedStudent: isEmailVerified,
+        );
       }
     } catch (e) {
       debugPrint('Error fetching user profile: $e');
     }
   }
 
-  StudentProfile get currentUser => _currentUser;
+  StudentProfile get currentUser {
+    final isEmailVerified = _auth.currentUser?.emailVerified ?? false;
+    if (isEmailVerified && !_currentUser.isVerifiedStudent) {
+      _currentUser = _currentUser.copyWith(isVerifiedStudent: true);
+      if (_auth.currentUser != null) {
+        _db.updateVerificationStatus(_auth.currentUser!.uid, true);
+      }
+    }
+    return _currentUser;
+  }
+
   bool get isAuthenticated => _auth.currentUser != null;
   bool get isEmailVerified => _auth.currentUser?.emailVerified ?? false;
-  bool get isOnboarded => true;
+  String? get firebaseUserId => _auth.currentUser?.uid;
+  String? get firebaseUserEmail => _auth.currentUser?.email;
+  bool get isOnboarded => _isOnboarded;
+  bool get hasLoadedOnboarded => _hasLoadedOnboarded;
   bool get isProfileSetupComplete =>
       _isProfileSetupComplete && _currentUser.photos.isNotEmpty;
 
@@ -89,8 +163,15 @@ class AuthProvider extends ChangeNotifier {
     final user = _auth.currentUser;
     if (user == null) return false;
     await user.reload();
-    notifyListeners();
-    return _auth.currentUser?.emailVerified ?? false;
+    final isVerified = _auth.currentUser?.emailVerified ?? false;
+    if (isVerified) {
+      if (!_currentUser.isVerifiedStudent) {
+        _currentUser = _currentUser.copyWith(isVerifiedStudent: true);
+        await _db.updateVerificationStatus(user.uid, true);
+      }
+      notifyListeners();
+    }
+    return isVerified;
   }
 
   Future<void> login({required String email, required String password}) async {
@@ -110,6 +191,7 @@ class AuthProvider extends ChangeNotifier {
       }
 
       await _fetchUserProfile(cred.user!.uid);
+      await completeOnboarding();
     } on FirebaseAuthException catch (e) {
       throw e.message ?? 'Login failed';
     }
@@ -117,7 +199,7 @@ class AuthProvider extends ChangeNotifier {
 
   Future<void> resetPassword(String email) async {
     if (email.trim().isEmpty) {
-      throw 'Please enter your university email address.';
+      throw 'Please enter your email address.';
     }
     if (!_isValidEmailDomain(email)) {
       throw 'Please use your @email.kmutnb.ac.th student email.';
@@ -162,9 +244,9 @@ class AuthProvider extends ChangeNotifier {
       );
 
       await cred.user!.sendEmailVerification();
-      await _auth.signOut(); // Prevent automatic login until verified
-
-      throw 'VERIFICATION_REQUIRED';
+      await _fetchUserProfile(uid);
+      await completeOnboarding();
+      notifyListeners();
     } on FirebaseAuthException catch (e) {
       throw e.message ?? 'Registration failed';
     }
@@ -224,14 +306,16 @@ class AuthProvider extends ChangeNotifier {
           name: cred.user!.displayName ?? 'New Student',
           nickname: cred.user!.displayName?.split(' ').first ?? 'Student',
           age: 20, // Cannot get age from Google easily, default to 20
-          faculty: 'Unknown',
-          major: 'Unknown',
-          year: 'Unknown',
+          faculty: 'Faculty of Engineering',
+          major: 'General',
+          year: 'Year 1 (Freshman)',
+          isVerifiedStudent: true,
         );
         _isProfileSetupComplete = false;
       }
 
       await _fetchUserProfile(uid);
+      await completeOnboarding();
       notifyListeners();
     } catch (e) {
       throw e.toString();
@@ -247,7 +331,7 @@ class AuthProvider extends ChangeNotifier {
     required String campusHangout,
     required List<String> photos,
   }) {
-    // Ideally this would save to Realtime Database as well
+    final isEmailVerified = _auth.currentUser?.emailVerified ?? false;
     _currentUser = _currentUser.copyWith(
       bio: bio,
       interests: interests,
@@ -256,7 +340,7 @@ class AuthProvider extends ChangeNotifier {
       favoriteMovie: favoriteMovie,
       campusHangout: campusHangout,
       photos: photos,
-      profileCompleteness: 1.0,
+      isVerifiedStudent: isEmailVerified || _currentUser.isVerifiedStudent,
     );
     _isProfileSetupComplete = true;
     _db.saveFullUserProfile(_currentUser);
@@ -264,14 +348,23 @@ class AuthProvider extends ChangeNotifier {
   }
 
   void updateProfile(StudentProfile updated) {
-    _currentUser = updated;
-    _db.saveFullUserProfile(updated);
+    final isEmailVerified = _auth.currentUser?.emailVerified ?? false;
+    _currentUser = updated.copyWith(
+      isVerifiedStudent: isEmailVerified || updated.isVerifiedStudent,
+    );
+    _db.saveFullUserProfile(_currentUser);
     notifyListeners();
   }
 
-  void completeOnboarding() {
-    // Should save to local storage in real app
+  Future<void> completeOnboarding() async {
+    _isOnboarded = true;
     notifyListeners();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool(_onboardingCompleteKey, true);
+    } catch (e) {
+      debugPrint('Error saving onboarding state: $e');
+    }
   }
 
   void updateSettings({
@@ -295,16 +388,42 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  void blockUser(String userId) {
+  Future<void> blockUser(String userId) async {
     if (!_blockedUsers.contains(userId)) {
       _blockedUsers.add(userId);
       notifyListeners();
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setStringList(_blockedUsersKey, _blockedUsers);
+        final myUid = firebaseUserId ?? currentUser.id;
+        await _db.blockUser(myUid, userId);
+      } catch (e) {
+        debugPrint('Error persisting block user: $e');
+      }
     }
   }
 
-  void unblockUser(String userId) {
+  Future<void> unblockUser(String userId) async {
     _blockedUsers.remove(userId);
     notifyListeners();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setStringList(_blockedUsersKey, _blockedUsers);
+      final myUid = firebaseUserId ?? currentUser.id;
+      await _db.unblockUser(myUid, userId);
+    } catch (e) {
+      debugPrint('Error persisting unblock user: $e');
+    }
+  }
+
+  Future<void> unmatchUser(String userId) async {
+    try {
+      final myUid = firebaseUserId ?? currentUser.id;
+      await _db.unmatchUser(myUid, userId);
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Error unmatching user: $e');
+    }
   }
 
   Future<void> logout() async {
@@ -324,6 +443,10 @@ class AuthProvider extends ChangeNotifier {
     try {
       final user = _auth.currentUser;
       if (user != null) {
+        final uid = user.uid;
+        // Delete all database records (profile, swipes, matches, notifications) first
+        await _db.deleteUserData(uid);
+        // Then delete the authentication user
         await user.delete();
         await logout();
       }

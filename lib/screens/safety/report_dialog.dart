@@ -69,7 +69,7 @@ class _ReportUserDialogState extends State<ReportUserDialog> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: BauhausColors.success.withOpacity(0.1),
+                color: BauhausColors.success.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: const Icon(
@@ -218,14 +218,14 @@ class _ReportUserDialogState extends State<ReportUserDialog> {
                 contentPadding: const EdgeInsets.all(12),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(
+                  borderSide: BorderSide(
                     color: BauhausColors.border,
                     width: 1.0,
                   ),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(
+                  borderSide: BorderSide(
                     color: BauhausColors.border,
                     width: 1.0,
                   ),

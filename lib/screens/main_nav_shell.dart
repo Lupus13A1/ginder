@@ -5,7 +5,6 @@ import '../theme/bauhaus_colors.dart';
 import '../providers/chat_provider.dart';
 import '../providers/notification_provider.dart';
 import 'discover/discover_screen.dart';
-import 'explore/explore_screen.dart';
 import 'matches/matches_screen.dart';
 import 'notifications/notifications_screen.dart';
 import 'profile/my_profile_screen.dart';
@@ -24,7 +23,6 @@ class _MainNavShellState extends State<MainNavShell> {
 
   final List<Widget> _screens = const [
     DiscoverScreen(),
-    ExploreScreen(),
     MatchesScreen(),
     NotificationsScreen(),
     MyProfileScreen(),
@@ -52,10 +50,10 @@ class _MainNavShellState extends State<MainNavShell> {
       backgroundColor: BauhausColors.background,
       body: IndexedStack(index: _currentIndex, children: _screens),
       bottomNavigationBar: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           color: BauhausColors.surface,
           border: Border(
-            top: BorderSide(color: BauhausColors.border, width: 3.0),
+            top: BorderSide(color: BauhausColors.border, width: 1.0),
           ),
         ),
         child: SafeArea(
@@ -72,26 +70,20 @@ class _MainNavShellState extends State<MainNavShell> {
                 ),
                 _buildNavItem(
                   index: 1,
-                  icon: Icons.explore,
-                  label: 'EXPLORE',
-                  activeColor: BauhausColors.primaryBlue,
-                ),
-                _buildNavItem(
-                  index: 2,
                   icon: Icons.chat_bubble,
                   label: 'MATCHES',
                   activeColor: BauhausColors.primaryYellow,
                   badgeCount: unreadChats,
                 ),
                 _buildNavItem(
-                  index: 3,
+                  index: 2,
                   icon: Icons.notifications,
                   label: 'ALERTS',
                   activeColor: BauhausColors.primaryRed,
                   badgeCount: unreadNotifs,
                 ),
                 _buildNavItem(
-                  index: 4,
+                  index: 3,
                   icon: Icons.person,
                   label: 'PROFILE',
                   activeColor: BauhausColors.primaryBlue,
@@ -112,29 +104,27 @@ class _MainNavShellState extends State<MainNavShell> {
     int badgeCount = 0,
   }) {
     final isSelected = _currentIndex == index;
-    final isYellow = activeColor == BauhausColors.primaryYellow;
-    final activeTextColor = isYellow ? BauhausColors.foreground : Colors.white;
+    final tabActiveColor = activeColor == BauhausColors.primaryYellow
+        ? const Color(0xFFD97706)
+        : activeColor;
 
     return Expanded(
       child: GestureDetector(
         onTap: () => _onTabSelected(index),
         behavior: HitTestBehavior.opaque,
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 150),
-          margin: const EdgeInsets.symmetric(horizontal: 2),
+          duration: const Duration(milliseconds: 180),
+          margin: const EdgeInsets.symmetric(horizontal: 3, vertical: 2),
           decoration: BoxDecoration(
-            color: isSelected ? activeColor : Colors.transparent,
-            borderRadius: BorderRadius.zero,
+            color: isSelected
+                ? tabActiveColor.withValues(alpha: 0.12)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
             border: isSelected
-                ? Border.all(color: BauhausColors.border, width: 2.0)
-                : null,
-            boxShadow: isSelected
-                ? const [
-                    BoxShadow(
-                      color: BauhausColors.border,
-                      offset: Offset(2, 2),
-                    ),
-                  ]
+                ? Border.all(
+                    color: tabActiveColor.withValues(alpha: 0.28),
+                    width: 1.0,
+                  )
                 : null,
           ),
           child: Stack(
@@ -145,21 +135,19 @@ class _MainNavShellState extends State<MainNavShell> {
                 children: [
                   Icon(
                     icon,
-                    size: 20,
-                    color: isSelected
-                        ? activeTextColor
-                        : BauhausColors.foreground,
+                    size: 21,
+                    color: isSelected ? tabActiveColor : Colors.grey.shade500,
                   ),
-                  const SizedBox(height: 2),
+                  const SizedBox(height: 3),
                   Text(
                     label,
                     style: TextStyle(
-                      fontSize: 9,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 0.5,
-                      color: isSelected
-                          ? activeTextColor
-                          : BauhausColors.foreground,
+                      fontSize: 9.5,
+                      fontWeight: isSelected
+                          ? FontWeight.w800
+                          : FontWeight.w600,
+                      letterSpacing: 0.3,
+                      color: isSelected ? tabActiveColor : Colors.grey.shade600,
                     ),
                     maxLines: 1,
                   ),
@@ -168,19 +156,16 @@ class _MainNavShellState extends State<MainNavShell> {
               if (badgeCount > 0)
                 Positioned(
                   top: 2,
-                  right: 8,
+                  right: 6,
                   child: Container(
-                    padding: const EdgeInsets.all(3),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 4,
+                      vertical: 1,
+                    ),
                     decoration: BoxDecoration(
-                      color:
-                          isSelected && activeColor == BauhausColors.primaryRed
-                          ? BauhausColors.primaryYellow
-                          : BauhausColors.primaryRed,
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: BauhausColors.border,
-                        width: 1.0,
-                      ),
+                      color: BauhausColors.primaryRed,
+                      borderRadius: BorderRadius.circular(999),
+                      border: Border.all(color: Colors.white, width: 1.5),
                     ),
                     constraints: const BoxConstraints(
                       minWidth: 16,
@@ -189,12 +174,8 @@ class _MainNavShellState extends State<MainNavShell> {
                     child: Center(
                       child: Text(
                         '$badgeCount',
-                        style: TextStyle(
-                          color:
-                              isSelected &&
-                                  activeColor == BauhausColors.primaryRed
-                              ? BauhausColors.foreground
-                              : Colors.white,
+                        style: const TextStyle(
+                          color: Colors.white,
                           fontSize: 9,
                           fontWeight: FontWeight.bold,
                         ),

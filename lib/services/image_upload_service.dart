@@ -178,46 +178,85 @@ class ImageUploadService {
       context: context,
       backgroundColor: Colors.transparent,
       builder: (ctx) => Container(
-        padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           color: BauhausColors.background,
-          border: const Border(
-            top: BorderSide(color: BauhausColors.border, width: 3.0),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          border: Border(
+            top: BorderSide(color: BauhausColors.border, width: 1.5),
+            left: BorderSide(color: BauhausColors.border, width: 1.5),
+            right: BorderSide(color: BauhausColors.border, width: 1.5),
           ),
-          boxShadow: const [
+          boxShadow: [
             BoxShadow(
-              color: BauhausColors.border,
+              color: Colors.black12,
               offset: Offset(0, -4),
-              blurRadius: 0,
+              blurRadius: 16,
             ),
           ],
         ),
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
         child: SafeArea(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              // Top drag handle
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 16),
+                  decoration: BoxDecoration(
+                    color: BauhausColors.border,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+
+              // Title Row
               Row(
                 children: [
                   Container(
-                    width: 14,
-                    height: 14,
-                    color: BauhausColors.primaryRed,
+                    width: 12,
+                    height: 12,
+                    decoration: BoxDecoration(
+                      color: BauhausColors.primaryRed,
+                      borderRadius: BorderRadius.circular(3),
+                    ),
                   ),
                   const SizedBox(width: 8),
                   Text(
                     'CHOOSE PHOTO SOURCE',
                     style: BauhausTextStyles.title().copyWith(
-                      letterSpacing: 1.2,
+                      letterSpacing: 0.8,
+                    ),
+                  ),
+                  const Spacer(),
+                  InkWell(
+                    onTap: () => Navigator.pop(ctx),
+                    borderRadius: BorderRadius.circular(999),
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: BauhausColors.muted,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: BauhausColors.borderSubtle),
+                      ),
+                      child: Icon(
+                        Icons.close,
+                        size: 16,
+                        color: BauhausColors.foreground,
+                      ),
                     ),
                   ),
                 ],
               ),
               const SizedBox(height: 16),
+
               _buildSourceTile(
                 context: ctx,
                 title: 'TAKE PHOTO WITH CAMERA',
-                icon: Icons.camera_alt,
+                icon: Icons.camera_alt_outlined,
                 color: BauhausColors.cardYellow,
                 onTap: () => Navigator.pop(ctx, ImageSource.camera),
               ),
@@ -225,18 +264,27 @@ class ImageUploadService {
               _buildSourceTile(
                 context: ctx,
                 title: 'CHOOSE FROM GALLERY',
-                icon: Icons.photo_library,
+                icon: Icons.photo_library_outlined,
                 color: BauhausColors.surface,
                 onTap: () => Navigator.pop(ctx, ImageSource.gallery),
               ),
-              const SizedBox(height: 12),
-              GestureDetector(
+              const SizedBox(height: 14),
+
+              InkWell(
                 onTap: () => Navigator.pop(ctx),
+                borderRadius: BorderRadius.circular(14),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  padding: const EdgeInsets.symmetric(vertical: 13),
                   decoration: BoxDecoration(
-                    color: BauhausColors.border,
-                    border: Border.all(color: BauhausColors.border, width: 2),
+                    color: BauhausColors.surfaceDark,
+                    borderRadius: BorderRadius.circular(14),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.08),
+                        blurRadius: 4,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
                   ),
                   child: Center(
                     child: Text(
@@ -260,42 +308,49 @@ class ImageUploadService {
     required Color color,
     required VoidCallback onTap,
   }) {
-    return GestureDetector(
+    return InkWell(
       onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
           color: color,
-          border: Border.all(color: BauhausColors.border, width: 2.5),
-          boxShadow: const [
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: BauhausColors.border, width: 1.5),
+          boxShadow: [
             BoxShadow(
-              color: BauhausColors.border,
-              offset: Offset(3, 3),
-              blurRadius: 0,
+              color: Colors.black.withValues(alpha: 0.04),
+              offset: const Offset(0, 2),
+              blurRadius: 6,
             ),
           ],
         ),
         child: Row(
           children: [
             Container(
-              padding: const EdgeInsets.all(8),
+              padding: const EdgeInsets.all(9),
               decoration: BoxDecoration(
                 color: BauhausColors.surface,
-                border: Border.all(color: BauhausColors.border, width: 1.5),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: BauhausColors.border, width: 1.2),
               ),
-              child: Icon(icon, color: BauhausColors.foreground, size: 22),
+              child: Icon(icon, color: BauhausColors.foreground, size: 20),
             ),
             const SizedBox(width: 14),
             Expanded(
               child: Text(
                 title,
                 style: BauhausTextStyles.bodyMedium().copyWith(
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 0.5,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.4,
                 ),
               ),
             ),
-            const Icon(Icons.arrow_forward, size: 18),
+            Icon(
+              Icons.arrow_forward_ios_rounded,
+              size: 14,
+              color: BauhausColors.foreground,
+            ),
           ],
         ),
       ),

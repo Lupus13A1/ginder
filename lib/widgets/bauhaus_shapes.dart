@@ -5,17 +5,19 @@ import '../theme/bauhaus_colors.dart';
 /// Triangle CustomPainter following the Bauhaus Design System
 class TrianglePainter extends CustomPainter {
   final Color color;
-  final Color borderColor;
+  final Color? borderColor;
   final double borderWidth;
 
   const TrianglePainter({
     required this.color,
-    this.borderColor = BauhausColors.border,
+    this.borderColor,
     this.borderWidth = 2.0,
   });
 
   @override
   void paint(Canvas canvas, Size size) {
+    final effectiveBorderColor = borderColor ?? BauhausColors.border;
+
     final path = Path()
       ..moveTo(size.width / 2, 0)
       ..lineTo(size.width, size.height)
@@ -33,7 +35,7 @@ class TrianglePainter extends CustomPainter {
       canvas.drawPath(
         path,
         Paint()
-          ..color = borderColor
+          ..color = effectiveBorderColor
           ..style = PaintingStyle.stroke
           ..strokeWidth = borderWidth,
       );
@@ -51,14 +53,14 @@ class TrianglePainter extends CustomPainter {
 class BauhausTriangle extends StatelessWidget {
   final double size;
   final Color color;
-  final Color borderColor;
+  final Color? borderColor;
   final double borderWidth;
 
   const BauhausTriangle({
     super.key,
     this.size = 24.0,
     this.color = BauhausColors.primaryYellow,
-    this.borderColor = BauhausColors.border,
+    this.borderColor,
     this.borderWidth = 2.0,
   });
 
@@ -68,7 +70,7 @@ class BauhausTriangle extends StatelessWidget {
       size: Size(size, size),
       painter: TrianglePainter(
         color: color,
-        borderColor: borderColor,
+        borderColor: borderColor ?? BauhausColors.border,
         borderWidth: borderWidth,
       ),
     );
@@ -176,10 +178,10 @@ class BauhausHeroPattern extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: BauhausColors.primaryBlue,
                   border: Border.all(color: BauhausColors.border, width: 3.0),
-                  boxShadow: const [
+                  boxShadow: [
                     BoxShadow(
                       color: BauhausColors.border,
-                      offset: Offset(4, 4),
+                      offset: const Offset(4, 4),
                       blurRadius: 0,
                     ),
                   ],
@@ -204,7 +206,7 @@ class BauhausHeroPattern extends StatelessWidget {
             child: Container(
               width: 80,
               height: 12,
-              decoration: const BoxDecoration(color: BauhausColors.border),
+              decoration: BoxDecoration(color: BauhausColors.border),
             ),
           ),
         ],
@@ -218,7 +220,7 @@ class BauhausAvatar extends StatelessWidget {
   final String? imageUrl;
   final String initial;
   final double size;
-  final Color backgroundColor;
+  final Color? backgroundColor;
   final bool isCircle;
   final double borderWidth;
   final double shadowOffset;
@@ -229,7 +231,7 @@ class BauhausAvatar extends StatelessWidget {
     this.imageUrl,
     required this.initial,
     this.size = 54.0,
-    this.backgroundColor = BauhausColors.primaryBlue,
+    this.backgroundColor,
     this.isCircle = true,
     this.borderWidth = 2.5,
     this.shadowOffset = 3.0,
@@ -238,6 +240,8 @@ class BauhausAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final effectiveBg = backgroundColor ?? BauhausColors.primaryBlue;
+
     Widget avatarContent;
 
     if (imageUrl != null && imageUrl!.startsWith('http')) {
@@ -246,19 +250,20 @@ class BauhausAvatar extends StatelessWidget {
         fit: BoxFit.cover,
         width: size,
         height: size,
-        errorBuilder: (context, error, stackTrace) => _buildFallbackInitial(),
+        errorBuilder: (context, error, stackTrace) =>
+            _buildFallbackInitial(effectiveBg),
       );
     } else {
-      avatarContent = _buildFallbackInitial();
+      avatarContent = _buildFallbackInitial(effectiveBg);
     }
 
     Widget container = Container(
       width: size,
       height: size,
       decoration: BoxDecoration(
-        color: backgroundColor,
+        color: effectiveBg,
         shape: isCircle ? BoxShape.circle : BoxShape.rectangle,
-        borderRadius: isCircle ? null : BorderRadius.zero,
+        borderRadius: isCircle ? null : BorderRadius.circular(12),
         border: Border.all(color: BauhausColors.border, width: borderWidth),
         boxShadow: shadowOffset > 0
             ? [
@@ -290,7 +295,7 @@ class BauhausAvatar extends StatelessWidget {
               shape: BoxShape.circle,
               border: Border.all(color: BauhausColors.border, width: 2.0),
             ),
-            child: const Icon(
+            child: Icon(
               Icons.verified,
               size: 14,
               color: BauhausColors.foreground,
@@ -301,16 +306,16 @@ class BauhausAvatar extends StatelessWidget {
     );
   }
 
-  Widget _buildFallbackInitial() {
+  Widget _buildFallbackInitial(Color effectiveBg) {
     return Container(
-      color: backgroundColor,
+      color: effectiveBg,
       alignment: Alignment.center,
       child: Text(
         initial.toUpperCase(),
         style: TextStyle(
           fontSize: size * 0.42,
           fontWeight: FontWeight.w900,
-          color: backgroundColor == BauhausColors.primaryYellow
+          color: effectiveBg == BauhausColors.primaryYellow
               ? BauhausColors.foreground
               : Colors.white,
         ),

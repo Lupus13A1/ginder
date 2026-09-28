@@ -142,7 +142,7 @@ class _BauhausButtonState extends State<BauhausButton> {
     final isPill = widget.shape == BauhausButtonShape.pill;
     final borderRadius = isPill
         ? BorderRadius.circular(999)
-        : BorderRadius.zero;
+        : BorderRadius.circular(12);
     final isGhost = widget.variant == BauhausButtonVariant.ghost;
     final isInteractive = widget.onPressed != null && !widget.isLoading;
 
@@ -156,14 +156,14 @@ class _BauhausButtonState extends State<BauhausButton> {
             width: 18,
             height: 18,
             child: CircularProgressIndicator(
-              strokeWidth: 2.5,
+              strokeWidth: 2.2,
               valueColor: AlwaysStoppedAnimation<Color>(_getTextColor()),
             ),
           ),
           const SizedBox(width: 10),
         ] else if (widget.icon != null) ...[
           IconTheme(
-            data: IconThemeData(color: _getTextColor(), size: 20),
+            data: IconThemeData(color: _getTextColor(), size: 18),
             child: widget.icon!,
           ),
           const SizedBox(width: 8),
@@ -172,7 +172,7 @@ class _BauhausButtonState extends State<BauhausButton> {
           widget.text.toUpperCase(),
           style: BauhausTextStyles.button(
             color: _getTextColor(),
-          ).copyWith(fontSize: widget.fontSize),
+          ).copyWith(fontSize: widget.fontSize ?? 13.5, letterSpacing: 0.6),
         ),
       ],
     );
@@ -196,12 +196,14 @@ class _BauhausButtonState extends State<BauhausButton> {
             }
           : null,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 60),
-        transform: Matrix4.translationValues(
-          _isPressed ? 2.0 : 0.0,
-          _isPressed ? 2.0 : 0.0,
-          0.0,
+        duration: const Duration(milliseconds: 100),
+        curve: Curves.easeOutCubic,
+        transform: Matrix4.diagonal3Values(
+          _isPressed ? 0.98 : 1.0,
+          _isPressed ? 0.98 : 1.0,
+          1.0,
         ),
+        transformAlignment: Alignment.center,
         constraints: BoxConstraints(
           minHeight: widget.height,
           minWidth: widget.isFullWidth ? double.infinity : 48.0,
@@ -209,20 +211,29 @@ class _BauhausButtonState extends State<BauhausButton> {
         padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 12.0),
         decoration: BoxDecoration(
           color: _getBackgroundColor(),
-          borderRadius: BorderRadius.circular(12),
-          border:
-              isGhost ||
-                  widget.variant == BauhausButtonVariant.primaryBlue ||
-                  widget.variant == BauhausButtonVariant.primaryRed
+          borderRadius: borderRadius,
+          border: isGhost
               ? null
-              : Border.all(color: BauhausColors.border, width: 1.0),
+              : Border.all(
+                  color: widget.variant == BauhausButtonVariant.outline
+                      ? BauhausColors.border
+                      : Colors.transparent,
+                  width: 1.0,
+                ),
           boxShadow: (isGhost || _isPressed || widget.onPressed == null)
               ? []
               : [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
+                    color:
+                        (widget.variant == BauhausButtonVariant.primaryRed
+                                ? BauhausColors.primaryRed
+                                : (widget.variant ==
+                                          BauhausButtonVariant.primaryBlue
+                                      ? BauhausColors.primaryBlue
+                                      : Colors.black))
+                            .withValues(alpha: 0.12),
                     offset: const Offset(0, 4),
-                    blurRadius: 10,
+                    blurRadius: 12,
                     spreadRadius: 0,
                   ),
                 ],

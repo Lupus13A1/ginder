@@ -6,6 +6,7 @@ import '../../widgets/bauhaus_button.dart';
 import '../../widgets/bauhaus_card.dart';
 import '../../widgets/bauhaus_accordion.dart';
 import '../../widgets/bauhaus_app_bar.dart';
+import '../../widgets/bauhaus_snackbar.dart';
 import '../../providers/auth_provider.dart';
 import '../../models/student_profile.dart';
 import 'report_dialog.dart';
@@ -31,9 +32,6 @@ class SafetyReportScreen extends StatelessWidget {
           children: [
             // Student Verification Badge Banner
             BauhausCard(
-              borderWidth: 3.0,
-              shadowOffset: 5.0,
-              cornerBadge: BauhausCornerBadgeType.circleRed,
               child: Row(
                 children: [
                   Container(
@@ -44,10 +42,10 @@ class SafetyReportScreen extends StatelessWidget {
                       shape: BoxShape.circle,
                       border: Border.all(
                         color: BauhausColors.border,
-                        width: 2.5,
+                        width: 1.0,
                       ),
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.verified_user,
                       size: 28,
                       color: BauhausColors.foreground,
@@ -82,8 +80,6 @@ class SafetyReportScreen extends StatelessWidget {
 
             // Emergency Campus Security Hotline Card
             BauhausCard.red(
-              borderWidth: 3.0,
-              shadowOffset: 5.0,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -113,19 +109,15 @@ class SafetyReportScreen extends StatelessWidget {
                     text: 'CALL CAMPUS DISPATCH: 02-218-0000',
                     isFullWidth: true,
                     height: 44,
-                    icon: const Icon(
+                    icon: Icon(
                       Icons.phone,
                       size: 16,
                       color: BauhausColors.foreground,
                     ),
                     onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text(
-                            'Simulating emergency call to Campus Security Control...',
-                          ),
-                          backgroundColor: BauhausColors.foreground,
-                        ),
+                      BauhausSnackBar.showInfo(
+                        context,
+                        'Simulating emergency call to Campus Security Control...',
                       );
                     },
                   ),
@@ -139,7 +131,7 @@ class SafetyReportScreen extends StatelessWidget {
             Text('CAMPUS DATING GUIDELINES', style: BauhausTextStyles.title()),
             const SizedBox(height: 10),
 
-            const BauhausAccordion(
+            BauhausAccordion(
               title: '1. ALWAYS MEET IN PUBLIC CAMPUS SPOTS',
               initiallyExpanded: true,
               content: Text(
@@ -152,7 +144,7 @@ class SafetyReportScreen extends StatelessWidget {
               ),
             ),
 
-            const BauhausAccordion(
+            BauhausAccordion(
               title: '2. PROTECT SENSITIVE STUDENT INFORMATION',
               content: Text(
                 'Never share dormitory room numbers, financial details, or login passwords with anyone you meet on the platform.',
@@ -164,7 +156,7 @@ class SafetyReportScreen extends StatelessWidget {
               ),
             ),
 
-            const BauhausAccordion(
+            BauhausAccordion(
               title: '3. ZERO TOLERANCE FOR HARASSMENT',
               content: Text(
                 'Ginder strictly prohibits any form of stalking, hate speech, sexual harassment, or non-consensual sharing of media. Offenders will have their university accounts terminated.',
@@ -186,7 +178,8 @@ class SafetyReportScreen extends StatelessWidget {
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: BauhausColors.surface,
-                  border: Border.all(color: BauhausColors.border, width: 2.0),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: BauhausColors.border, width: 1.0),
                 ),
                 child: Center(
                   child: Text(
@@ -205,7 +198,15 @@ class SafetyReportScreen extends StatelessWidget {
                   ),
                   decoration: BoxDecoration(
                     color: BauhausColors.surface,
-                    border: Border.all(color: BauhausColors.border, width: 2.0),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: BauhausColors.border, width: 1.0),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.03),
+                        blurRadius: 4,
+                        offset: const Offset(0, 1),
+                      ),
+                    ],
                   ),
                   child: Row(
                     children: [

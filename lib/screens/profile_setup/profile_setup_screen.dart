@@ -7,9 +7,11 @@ import '../../widgets/bauhaus_button.dart';
 import '../../widgets/bauhaus_card.dart';
 import '../../widgets/bauhaus_text_field.dart';
 import '../../widgets/bauhaus_badge.dart';
+import '../../widgets/bauhaus_snackbar.dart';
+import '../../widgets/bauhaus_alert_banner.dart';
 import '../../providers/auth_provider.dart';
+import '../../routes/app_routes.dart';
 import '../../services/google_drive_service.dart';
-import '../main_nav_shell.dart';
 
 class ProfileSetupScreen extends StatefulWidget {
   const ProfileSetupScreen({super.key});
@@ -91,19 +93,11 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
           _photos.add(result.url!);
         }
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('PHOTO SAVED SUCCESSFULLY!'),
-          backgroundColor: BauhausColors.primaryRed,
-        ),
-      );
+      BauhausSnackBar.showSuccess(context, 'PHOTO SAVED SUCCESSFULLY!');
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(result.errorMessage ?? 'Upload failed'),
-          backgroundColor: BauhausColors.foreground,
-          duration: const Duration(seconds: 4),
-        ),
+      BauhausSnackBar.showError(
+        context,
+        result.errorMessage ?? 'Upload failed',
       );
     }
   }
@@ -136,14 +130,9 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
 
   void _saveProfile() {
     if (_photos.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            '⚠️ กรุณาอัปโหลดรูปภาพโปรไฟล์อย่างน้อย 1 รูปก่อนเริ่มใช้งาน (PLEASE UPLOAD AT LEAST 1 PHOTO)',
-          ),
-          backgroundColor: BauhausColors.primaryRed,
-          duration: Duration(seconds: 4),
-        ),
+      BauhausSnackBar.showWarning(
+        context,
+        'Please upload at least 1 profile photo before continuing',
       );
       return;
     }
@@ -160,7 +149,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
 
     Navigator.of(
       context,
-    ).pushReplacement(MaterialPageRoute(builder: (_) => const MainNavShell()));
+    ).pushNamedAndRemoveUntil(AppRoutes.home, (route) => false);
   }
 
   @override
@@ -180,14 +169,15 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                   const GeometricBrandMark(size: 14, spacing: 6),
                   Container(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 3,
+                      horizontal: 10,
+                      vertical: 4,
                     ),
                     decoration: BoxDecoration(
                       color: BauhausColors.primaryYellow,
+                      borderRadius: BorderRadius.circular(999),
                       border: Border.all(
                         color: BauhausColors.border,
-                        width: 2.0,
+                        width: 1.0,
                       ),
                     ),
                     child: Text(
@@ -213,8 +203,6 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
 
               // 1. Photos Section
               BauhausCard(
-                borderWidth: 3.0,
-                shadowOffset: 5.0,
                 cornerBadge: BauhausCornerBadgeType.circleRed,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -222,50 +210,39 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          'CAMPUS PHOTOS (${_photos.length}/4)',
-                          style: BauhausTextStyles.title(),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              'CAMPUS PHOTOS (${_photos.length}/4)',
+                              style: BauhausTextStyles.title(),
+                            ),
+                            const SizedBox(width: 4),
+                            const Text(
+                              '*',
+                              style: TextStyle(
+                                color: BauhausColors.primaryRed,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ],
                         ),
                         BauhausBadge(
                           label: _photos.isEmpty ? 'REQUIRED 1+' : 'MAIN PHOTO',
                           variant: _photos.isEmpty
-                              ? BauhausBadgeVariant.yellow
-                              : BauhausBadgeVariant.red,
+                              ? BauhausBadgeVariant.warning
+                              : BauhausBadgeVariant.success,
                         ),
                       ],
                     ),
                     if (_photos.isEmpty) ...[
                       const SizedBox(height: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: BauhausColors.primaryRed.withAlpha(25),
-                          border: Border.all(
-                            color: BauhausColors.primaryRed,
-                            width: 1.5,
-                          ),
-                        ),
-                        child: Row(
-                          children: [
-                            const Icon(
-                              Icons.error_outline,
-                              color: BauhausColors.primaryRed,
-                              size: 16,
-                            ),
-                            const SizedBox(width: 6),
-                            Expanded(
-                              child: Text(
-                                'บังคับ: กรุณาอัปโหลดรูปภาพอย่างน้อย 1 รูป (UPLOAD AT LEAST 1 PHOTO)',
-                                style: BauhausTextStyles.badge(
-                                  color: BauhausColors.primaryRed,
-                                ).copyWith(fontSize: 9),
-                              ),
-                            ),
-                          ],
-                        ),
+                      const BauhausAlertBanner(
+                        severity: BauhausAlertSeverity.warning,
+                        message:
+                            'Please upload at least 1 profile photo before proceeding',
+                        title: 'REQUIRED PHOTO',
                       ),
                     ],
                     const SizedBox(height: 12),
@@ -291,8 +268,6 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
 
               // 2. Bio Section
               BauhausCard(
-                borderWidth: 3.0,
-                shadowOffset: 5.0,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -315,8 +290,6 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
 
               // 3. Interests Chips Section
               BauhausCard(
-                borderWidth: 3.0,
-                shadowOffset: 5.0,
                 cornerBadge: BauhausCornerBadgeType.triangleYellow,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -365,8 +338,6 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
 
               // 4. University Vibes & Anthem
               BauhausCard(
-                borderWidth: 3.0,
-                shadowOffset: 5.0,
                 cornerBadge: BauhausCornerBadgeType.squareBlue,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -384,7 +355,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                             label: 'FAVORITE ANTHEM SONG',
                             hintText: 'Blue Monday',
                             controller: _songController,
-                            prefixIcon: const Icon(
+                            prefixIcon: Icon(
                               Icons.music_note,
                               color: BauhausColors.foreground,
                               size: 18,
@@ -407,7 +378,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                       label: 'FAVORITE MOVIE',
                       hintText: 'Metropolis (1927)',
                       controller: _movieController,
-                      prefixIcon: const Icon(
+                      prefixIcon: Icon(
                         Icons.movie,
                         color: BauhausColors.foreground,
                         size: 18,
@@ -418,7 +389,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                       label: 'FAVORITE CAMPUS HANGOUT',
                       hintText: 'Central Library 4th Floor',
                       controller: _hangoutController,
-                      prefixIcon: const Icon(
+                      prefixIcon: Icon(
                         Icons.location_on,
                         color: BauhausColors.foreground,
                         size: 18,
@@ -451,14 +422,16 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
     final isUploadingThis = _isUploadingPhoto && _uploadingSlotIndex == index;
 
     return Container(
+      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         color: BauhausColors.surface,
-        border: Border.all(color: BauhausColors.border, width: 2.5),
-        boxShadow: const [
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: BauhausColors.border, width: 1.0),
+        boxShadow: [
           BoxShadow(
-            color: BauhausColors.border,
-            offset: Offset(3, 3),
-            blurRadius: 0,
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
@@ -492,7 +465,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                 decoration: BoxDecoration(
                   color: BauhausColors.primaryRed,
                   shape: BoxShape.circle,
-                  border: Border.all(color: BauhausColors.border, width: 1.5),
+                  border: Border.all(color: BauhausColors.border, width: 1.0),
                 ),
                 child: const Icon(Icons.close, color: Colors.white, size: 12),
               ),
@@ -505,15 +478,23 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
             child: GestureDetector(
               onTap: () => _handlePhotoUpload(index),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
                   color: BauhausColors.surface,
-                  border: Border.all(color: BauhausColors.border, width: 1.5),
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(color: BauhausColors.border, width: 1.0),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.06),
+                      blurRadius: 4,
+                      offset: const Offset(0, 1),
+                    ),
+                  ],
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.sync,
                       size: 11,
                       color: BauhausColors.foreground,
@@ -537,7 +518,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
               decoration: BoxDecoration(
                 color: BauhausColors.primaryBlue,
                 shape: BoxShape.circle,
-                border: Border.all(color: BauhausColors.border, width: 1.5),
+                border: Border.all(color: BauhausColors.border, width: 1.0),
               ),
               child: const Icon(Icons.check, color: Colors.white, size: 12),
             ),
@@ -554,10 +535,11 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
       onTap: () => _handlePhotoUpload(index),
       child: Container(
         decoration: BoxDecoration(
-          color: BauhausColors.cardYellow.withAlpha(80),
+          color: BauhausColors.cardYellow.withValues(alpha: 0.25),
+          borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: BauhausColors.border,
-            width: 2.0,
+            color: BauhausColors.borderSubtle,
+            width: 1.5,
             style: BorderStyle.solid,
           ),
         ),
@@ -578,10 +560,10 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                       shape: BoxShape.circle,
                       border: Border.all(
                         color: BauhausColors.border,
-                        width: 1.5,
+                        width: 1.0,
                       ),
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.add_a_photo,
                       color: BauhausColors.foreground,
                       size: 20,

@@ -6,8 +6,12 @@ import '../../widgets/bauhaus_shapes.dart';
 import '../../widgets/bauhaus_badge.dart';
 import '../../widgets/bauhaus_button.dart';
 import '../../widgets/bauhaus_card.dart';
+import '../../widgets/bauhaus_bottom_sheet.dart';
+import '../../widgets/bauhaus_snackbar.dart';
+import '../../models/student_profile.dart';
 import '../../providers/auth_provider.dart';
 import '../../routes/app_routes.dart';
+import 'profile_preview_dialog.dart';
 
 class MyProfileScreen extends StatelessWidget {
   const MyProfileScreen({super.key});
@@ -30,10 +34,10 @@ class MyProfileScreen extends StatelessWidget {
                   horizontal: 16,
                   vertical: 12,
                 ),
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   color: BauhausColors.surface,
                   border: Border(
-                    bottom: BorderSide(color: BauhausColors.border, width: 3.0),
+                    bottom: BorderSide(color: BauhausColors.border, width: 1.0),
                   ),
                 ),
                 child: Row(
@@ -48,7 +52,16 @@ class MyProfileScreen extends StatelessWidget {
                     ),
                     const Spacer(),
                     IconButton(
-                      icon: const Icon(
+                      tooltip: 'Preview Profile',
+                      icon: Icon(
+                        Icons.visibility_outlined,
+                        color: BauhausColors.foreground,
+                      ),
+                      onPressed: () => ProfilePreviewDialog.show(context, user),
+                    ),
+                    IconButton(
+                      tooltip: 'Settings',
+                      icon: Icon(
                         Icons.settings,
                         color: BauhausColors.foreground,
                       ),
@@ -63,9 +76,9 @@ class MyProfileScreen extends StatelessWidget {
               // Hero Photo & Badge Banner
               Container(
                 height: 240,
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   border: Border(
-                    bottom: BorderSide(color: BauhausColors.border, width: 3.0),
+                    bottom: BorderSide(color: BauhausColors.border, width: 1.0),
                   ),
                 ),
                 child: Stack(
@@ -86,43 +99,46 @@ class MyProfileScreen extends StatelessWidget {
                       ),
                     ),
                     // Verified Stamp
-                    Positioned(
-                      top: 14,
-                      right: 14,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: BauhausColors.cardYellow,
-                          border: Border.all(
-                            color: BauhausColors.border,
-                            width: 2.0,
+                    if (user.isVerifiedStudent)
+                      Positioned(
+                        top: 14,
+                        right: 14,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
                           ),
-                          boxShadow: const [
-                            BoxShadow(
+                          decoration: BoxDecoration(
+                            color: BauhausColors.cardYellow,
+                            borderRadius: BorderRadius.circular(999),
+                            border: Border.all(
                               color: BauhausColors.border,
-                              offset: Offset(3, 3),
+                              width: 1.0,
                             ),
-                          ],
-                        ),
-                        child: Row(
-                          children: [
-                            const Icon(
-                              Icons.verified,
-                              size: 16,
-                              color: BauhausColors.primaryBlue,
-                            ),
-                            const SizedBox(width: 6),
-                            Text(
-                              'VERIFIED STUDENT',
-                              style: BauhausTextStyles.badge(),
-                            ),
-                          ],
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.08),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.verified,
+                                size: 16,
+                                color: BauhausColors.primaryBlue,
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                'VERIFIED STUDENT',
+                                style: BauhausTextStyles.badge(),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
-                    ),
                   ],
                 ),
               ),
@@ -134,8 +150,6 @@ class MyProfileScreen extends StatelessWidget {
                   children: [
                     // Name & Faculty Block
                     BauhausCard(
-                      borderWidth: 3.0,
-                      shadowOffset: 5.0,
                       cornerBadge: BauhausCornerBadgeType.circleRed,
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -152,31 +166,41 @@ class MyProfileScreen extends StatelessWidget {
                             ],
                           ),
                           const SizedBox(height: 6),
-                          Wrap(
-                            spacing: 6,
-                            runSpacing: 6,
-                            children: [
-                              BauhausBadge(
-                                label: user.faculty,
-                                variant: BauhausBadgeVariant.red,
-                              ),
-                              BauhausBadge(
-                                label: user.major,
-                                variant: BauhausBadgeVariant.blue,
-                              ),
-                              BauhausBadge(
-                                label: user.year,
-                                variant: BauhausBadgeVariant.yellow,
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 10),
-                          Text(
-                            user.studentEmail,
-                            style: BauhausTextStyles.caption(
-                              color: Colors.grey.shade600,
+                          if (user.faculty.isNotEmpty ||
+                              user.major.isNotEmpty ||
+                              user.year.isNotEmpty) ...[
+                            const SizedBox(height: 6),
+                            Wrap(
+                              spacing: 6,
+                              runSpacing: 6,
+                              children: [
+                                if (user.faculty.isNotEmpty)
+                                  BauhausBadge(
+                                    label: user.faculty,
+                                    variant: BauhausBadgeVariant.red,
+                                  ),
+                                if (user.major.isNotEmpty && user.major != '-')
+                                  BauhausBadge(
+                                    label: user.major,
+                                    variant: BauhausBadgeVariant.blue,
+                                  ),
+                                if (user.year.isNotEmpty)
+                                  BauhausBadge(
+                                    label: user.year,
+                                    variant: BauhausBadgeVariant.yellow,
+                                  ),
+                              ],
                             ),
-                          ),
+                          ],
+                          if (user.studentEmail.isNotEmpty) ...[
+                            const SizedBox(height: 10),
+                            Text(
+                              user.studentEmail,
+                              style: BauhausTextStyles.caption(
+                                color: Colors.grey.shade600,
+                              ),
+                            ),
+                          ],
                         ],
                       ),
                     ),
@@ -211,137 +235,255 @@ class MyProfileScreen extends StatelessWidget {
                                 '${(user.profileCompleteness * 100).round()}%',
                             color: BauhausColors.primaryBlue,
                             textColor: Colors.white,
+                            onTap: () =>
+                                _showCompletenessBreakdown(context, user),
                           ),
                         ),
                       ],
                     ),
 
-                    const SizedBox(height: 16),
-
-                    // Campus Bio
-                    BauhausCard(
-                      borderWidth: 3.0,
-                      shadowOffset: 5.0,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('CAMPUS BIO', style: BauhausTextStyles.title()),
-                          const SizedBox(height: 6),
-                          Text(user.bio, style: BauhausTextStyles.bodyMedium()),
-                        ],
-                      ),
-                    ),
-
-                    const SizedBox(height: 16),
-
-                    // Campus Anthem & Hangout
-                    BauhausCard(
-                      borderWidth: 3.0,
-                      shadowOffset: 5.0,
-                      cornerBadge: BauhausCornerBadgeType.triangleYellow,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'CAMPUS VIBES',
-                            style: BauhausTextStyles.title(),
+                    if (user.profileCompleteness < 1.0) ...[
+                      const SizedBox(height: 12),
+                      GestureDetector(
+                        onTap: () => _showCompletenessBreakdown(context, user),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 10,
                           ),
-                          const SizedBox(height: 10),
-                          if (user.anthemSong.isNotEmpty)
-                            Container(
-                              padding: const EdgeInsets.all(10),
-                              margin: const EdgeInsets.only(bottom: 8),
-                              decoration: BoxDecoration(
-                                color: BauhausColors.cardYellow,
-                                border: Border.all(
-                                  color: BauhausColors.border,
-                                  width: 1.5,
+                          decoration: BoxDecoration(
+                            color: BauhausColors.cardYellow,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: BauhausColors.border,
+                              width: 1.0,
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.tips_and_updates_outlined,
+                                size: 18,
+                                color: BauhausColors.foreground,
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  'Profile is ${(user.profileCompleteness * 100).round()}% complete • Tap to see suggestions',
+                                  style: BauhausTextStyles.caption(
+                                    color: BauhausColors.foreground,
+                                  ).copyWith(fontWeight: FontWeight.w700),
                                 ),
                               ),
-                              child: Row(
+                              Icon(
+                                Icons.chevron_right,
+                                size: 18,
+                                color: BauhausColors.foreground,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+
+                    if (user.bio.isNotEmpty) ...[
+                      const SizedBox(height: 16),
+                      // Campus Bio
+                      BauhausCard(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'CAMPUS BIO',
+                              style: BauhausTextStyles.title(),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              user.bio,
+                              style: BauhausTextStyles.bodyMedium(),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+
+                    if (user.anthemSong.isNotEmpty ||
+                        user.campusHangout.isNotEmpty) ...[
+                      const SizedBox(height: 16),
+                      // Campus Anthem & Hangout
+                      BauhausCard(
+                        cornerBadge: BauhausCornerBadgeType.triangleYellow,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'CAMPUS VIBES',
+                              style: BauhausTextStyles.title(),
+                            ),
+                            const SizedBox(height: 10),
+                            if (user.anthemSong.isNotEmpty)
+                              Container(
+                                padding: const EdgeInsets.all(10),
+                                margin: const EdgeInsets.only(bottom: 8),
+                                decoration: BoxDecoration(
+                                  color: BauhausColors.cardYellow,
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: Border.all(
+                                    color: BauhausColors.border,
+                                    width: 1.0,
+                                  ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    const Icon(
+                                      Icons.music_note,
+                                      color: BauhausColors.primaryRed,
+                                      size: 20,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        user.anthemArtist.isNotEmpty
+                                            ? '${user.anthemSong} — ${user.anthemArtist}'
+                                            : user.anthemSong,
+                                        style: BauhausTextStyles.bodyMedium()
+                                            .copyWith(
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            if (user.campusHangout.isNotEmpty)
+                              Row(
                                 children: [
                                   const Icon(
-                                    Icons.music_note,
-                                    color: BauhausColors.primaryRed,
-                                    size: 20,
+                                    Icons.location_on,
+                                    size: 18,
+                                    color: BauhausColors.primaryBlue,
                                   ),
-                                  const SizedBox(width: 8),
+                                  const SizedBox(width: 6),
                                   Expanded(
                                     child: Text(
-                                      '${user.anthemSong} — ${user.anthemArtist}',
-                                      style: BauhausTextStyles.bodyMedium()
-                                          .copyWith(
-                                            fontWeight: FontWeight.bold,
-                                          ),
+                                      user.campusHangout,
+                                      style: BauhausTextStyles.bodyMedium(),
                                     ),
                                   ),
                                 ],
                               ),
-                            ),
-                          if (user.campusHangout.isNotEmpty)
-                            Row(
-                              children: [
-                                const Icon(
-                                  Icons.location_on,
-                                  size: 18,
-                                  color: BauhausColors.primaryBlue,
-                                ),
-                                const SizedBox(width: 6),
-                                Expanded(
-                                  child: Text(
-                                    user.campusHangout,
-                                    style: BauhausTextStyles.bodyMedium(),
-                                  ),
-                                ),
-                              ],
-                            ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
+                    ],
 
                     const SizedBox(height: 16),
 
-                    // Interests Chips
-                    BauhausCard(
-                      borderWidth: 3.0,
-                      shadowOffset: 5.0,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'INTERESTS & ACTIVITIES',
-                            style: BauhausTextStyles.title(),
-                          ),
-                          const SizedBox(height: 10),
-                          Wrap(
-                            spacing: 6,
-                            runSpacing: 6,
-                            children: user.interests
-                                .map(
-                                  (i) => BauhausBadge(
-                                    label: i,
-                                    variant: BauhausBadgeVariant.surface,
-                                  ),
-                                )
-                                .toList(),
-                          ),
-                        ],
+                    // Campus Activities & Passions Chips
+                    if (user.activities.isNotEmpty) ...[
+                      BauhausCard(
+                        cornerBadge: BauhausCornerBadgeType.triangleYellow,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'CAMPUS ACTIVITIES & PASSIONS',
+                              style: BauhausTextStyles.title(),
+                            ),
+                            const SizedBox(height: 10),
+                            Wrap(
+                              spacing: 6,
+                              runSpacing: 6,
+                              children: user.activities
+                                  .map(
+                                    (i) => BauhausBadge(
+                                      label: i,
+                                      variant: BauhausBadgeVariant.yellow,
+                                    ),
+                                  )
+                                  .toList(),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
+                      const SizedBox(height: 16),
+                    ],
 
-                    const SizedBox(height: 20),
-
-                    // Edit Profile Action
-                    BauhausButton(
-                      text: 'EDIT CAMPUS PROFILE',
-                      isFullWidth: true,
-                      height: 50,
-                      variant: BauhausButtonVariant.primaryBlue,
-                      icon: const Icon(Icons.edit, size: 18),
-                      onPressed: () {
-                        Navigator.of(context).pushNamed(AppRoutes.editProfile);
-                      },
-                    ),
+                    // Tinder-style Interests & Lifestyle
+                    if (user.profileInterests.isNotEmpty) ...[
+                      BauhausCard(
+                        cornerBadge: BauhausCornerBadgeType.circleRed,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'INTERESTS & LIFESTYLE',
+                              style: BauhausTextStyles.title(),
+                            ),
+                            const SizedBox(height: 10),
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: user.profileInterests.displayItems.map((
+                                item,
+                              ) {
+                                return Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 7,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: BauhausColors.surface,
+                                    borderRadius: BorderRadius.circular(999),
+                                    border: Border.all(
+                                      color: BauhausColors.border,
+                                      width: 1.0,
+                                    ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withValues(
+                                          alpha: 0.04,
+                                        ),
+                                        blurRadius: 4,
+                                        offset: const Offset(0, 1),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        item.icon,
+                                        size: 14,
+                                        color: BauhausColors.primaryRed,
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        '${item.label}: ',
+                                        style: BauhausTextStyles.badge()
+                                            .copyWith(
+                                              color: Colors.grey.shade700,
+                                              fontSize: 10,
+                                            ),
+                                      ),
+                                      Text(
+                                        item.value,
+                                        style: BauhausTextStyles.bodyMedium()
+                                            .copyWith(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 12,
+                                            ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              }).toList(),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
 
                     const SizedBox(height: 10),
 
@@ -367,46 +509,213 @@ class MyProfileScreen extends StatelessWidget {
     );
   }
 
+  void _showCompletenessBreakdown(BuildContext context, StudentProfile user) {
+    final checklist = user.completenessChecklist;
+    final percent = (user.profileCompleteness * 100).round();
+
+    BauhausBottomSheet.show(
+      context: context,
+      title: 'PROFILE COMPLETENESS ($percent%)',
+      headerColor: percent == 100
+          ? BauhausColors.primaryBlue
+          : BauhausColors.primaryYellow,
+      headerTextColor: percent == 100 ? Colors.white : BauhausColors.foreground,
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Progress Bar
+            ClipRRect(
+              borderRadius: BorderRadius.circular(6),
+              child: LinearProgressIndicator(
+                value: user.profileCompleteness,
+                minHeight: 8,
+                backgroundColor: BauhausColors.border,
+                valueColor: const AlwaysStoppedAnimation<Color>(
+                  BauhausColors.primaryBlue,
+                ),
+              ),
+            ),
+            const SizedBox(height: 14),
+            Text(
+              'Complete your profile to 100% to boost matches and connect with campus peers.',
+              style: BauhausTextStyles.caption(color: Colors.grey.shade600),
+            ),
+            const SizedBox(height: 14),
+            ...checklist.map((item) {
+              return Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    if (item.sectionKey == 'email') {
+                      if (!user.isVerifiedStudent) {
+                        Navigator.of(
+                          context,
+                        ).pushNamed(AppRoutes.emailVerification);
+                      } else {
+                        BauhausSnackBar.showSuccess(
+                          context,
+                          'Your university email is already verified!',
+                        );
+                      }
+                    } else {
+                      Navigator.of(context).pushNamed(
+                        AppRoutes.editProfile,
+                        arguments: item.sectionKey,
+                      );
+                    }
+                  },
+                  borderRadius: BorderRadius.circular(8),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 6,
+                      horizontal: 4,
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 22,
+                          height: 22,
+                          decoration: BoxDecoration(
+                            color: item.isCompleted
+                                ? const Color(0xFF10B981)
+                                : BauhausColors.muted,
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: item.isCompleted
+                                  ? const Color(0xFF10B981)
+                                  : BauhausColors.border,
+                              width: 1.0,
+                            ),
+                          ),
+                          child: Icon(
+                            item.isCompleted
+                                ? Icons.check
+                                : Icons.circle_outlined,
+                            size: 13,
+                            color: item.isCompleted
+                                ? Colors.white
+                                : Colors.grey.shade400,
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            item.title,
+                            style: BauhausTextStyles.bodyMedium().copyWith(
+                              fontSize: 13,
+                              color: item.isCompleted
+                                  ? BauhausColors.foreground
+                                  : Colors.grey.shade700,
+                              fontWeight: item.isCompleted
+                                  ? FontWeight.w500
+                                  : FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                        Text(
+                          '+${item.weightPercent}%',
+                          style: BauhausTextStyles.badge().copyWith(
+                            fontSize: 11,
+                            color: item.isCompleted
+                                ? const Color(0xFF10B981)
+                                : BauhausColors.primaryRed,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Icon(
+                          Icons.arrow_forward_ios,
+                          size: 11,
+                          color: item.isCompleted
+                              ? Colors.grey.shade400
+                              : BauhausColors.primaryBlue,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            }),
+            const SizedBox(height: 18),
+            if (percent < 100)
+              BauhausButton(
+                text: 'EDIT PROFILE TO COMPLETE',
+                variant: BauhausButtonVariant.black,
+                isFullWidth: true,
+                icon: const Icon(Icons.edit, size: 16),
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  final firstIncomplete = user.completenessChecklist.firstWhere(
+                    (item) => !item.isCompleted,
+                    orElse: () => user.completenessChecklist.first,
+                  );
+                  if (firstIncomplete.sectionKey == 'email' &&
+                      !user.isVerifiedStudent) {
+                    Navigator.of(
+                      context,
+                    ).pushNamed(AppRoutes.emailVerification);
+                  } else {
+                    Navigator.of(context).pushNamed(
+                      AppRoutes.editProfile,
+                      arguments: firstIncomplete.sectionKey,
+                    );
+                  }
+                },
+              ),
+            const SizedBox(height: 10),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildStatTile({
     required String title,
     required String value,
     required Color color,
     required Color textColor,
+    VoidCallback? onTap,
   }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 12),
-      decoration: BoxDecoration(
-        color: color,
-        border: Border.all(color: BauhausColors.border, width: 2.5),
-        boxShadow: const [
-          BoxShadow(
-            color: BauhausColors.border,
-            offset: Offset(3, 3),
-            blurRadius: 0,
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.w900,
-              color: textColor,
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        decoration: BoxDecoration(
+          color: color,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: BauhausColors.border, width: 1.0),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.06),
+              blurRadius: 10,
+              offset: const Offset(0, 3),
             ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.w800,
-              letterSpacing: 1.0,
-              color: textColor,
+          ],
+        ),
+        child: Column(
+          children: [
+            Text(
+              value,
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.w900,
+                color: textColor,
+              ),
             ),
-          ),
-        ],
+            const SizedBox(height: 2),
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 1.0,
+                color: textColor,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

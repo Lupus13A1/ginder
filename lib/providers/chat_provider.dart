@@ -171,4 +171,44 @@ class ChatProvider extends ChangeNotifier {
       _db.markMatchAsRead(conversationId, _currentUserId);
     }
   }
+
+  /// Unmatch peer: removes match room and resets mutual swipe so they can meet again in Discover
+  Future<void> unmatch({
+    required String conversationId,
+    required String peerUid,
+  }) async {
+    final myUid = _currentUserId.isNotEmpty
+        ? _currentUserId
+        : (_auth.currentUser?.uid ?? 'my_user_id');
+
+    _conversations.removeWhere(
+      (c) => c.id == conversationId || c.peer.id == peerUid,
+    );
+    if (_activeConversationId == conversationId) {
+      _activeConversationId = null;
+    }
+    notifyListeners();
+
+    await _db.unmatchUser(myUid, peerUid);
+  }
+
+  /// Block peer: unmatches, deletes room, and permanently registers block in database
+  Future<void> block({
+    required String conversationId,
+    required String peerUid,
+  }) async {
+    final myUid = _currentUserId.isNotEmpty
+        ? _currentUserId
+        : (_auth.currentUser?.uid ?? 'my_user_id');
+
+    _conversations.removeWhere(
+      (c) => c.id == conversationId || c.peer.id == peerUid,
+    );
+    if (_activeConversationId == conversationId) {
+      _activeConversationId = null;
+    }
+    notifyListeners();
+
+    await _db.blockUser(myUid, peerUid);
+  }
 }

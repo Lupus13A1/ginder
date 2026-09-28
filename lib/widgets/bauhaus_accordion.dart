@@ -50,18 +50,16 @@ class _BauhausAccordionState extends State<BauhausAccordion> {
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12.0),
+      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         color: BauhausColors.surface,
-        borderRadius: BorderRadius.zero,
-        border: Border.all(
-          color: BauhausColors.border,
-          width: widget.borderWidth,
-        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: BauhausColors.border, width: 1.0),
         boxShadow: [
           BoxShadow(
-            color: BauhausColors.border,
-            offset: Offset(widget.shadowOffset, widget.shadowOffset),
-            blurRadius: 0,
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
@@ -113,10 +111,10 @@ class _BauhausAccordionState extends State<BauhausAccordion> {
             secondChild: Container(
               width: double.infinity,
               padding: const EdgeInsets.all(16.0),
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 color: BauhausColors.cardYellow,
                 border: Border(
-                  top: BorderSide(color: BauhausColors.border, width: 3.0),
+                  top: BorderSide(color: BauhausColors.border, width: 1.0),
                 ),
               ),
               child: widget.content,

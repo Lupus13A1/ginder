@@ -7,13 +7,13 @@ import '../../theme/bauhaus_text_styles.dart';
 import '../../widgets/bauhaus_shapes.dart';
 import '../../widgets/bauhaus_badge.dart';
 import '../../widgets/bauhaus_button.dart';
-import '../../widgets/bauhaus_bottom_sheet.dart';
 import '../../models/student_profile.dart';
 import '../../providers/discover_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/notification_provider.dart';
 import '../../models/notification_model.dart';
-import 'filter_bottom_sheet.dart';
+
+import '../profile/profile_preview_dialog.dart';
 import '../../routes/app_routes.dart';
 
 class DiscoverScreen extends StatefulWidget {
@@ -38,7 +38,8 @@ class _DiscoverScreenState extends State<DiscoverScreen>
       duration: const Duration(milliseconds: 260),
     );
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final myUid = context.read<AuthProvider>().currentUser.id;
+      final auth = context.read<AuthProvider>();
+      final myUid = auth.firebaseUserId ?? auth.currentUser.id;
       context.read<DiscoverProvider>().loadProfiles(uid: myUid);
     });
   }
@@ -170,8 +171,9 @@ class _DiscoverScreenState extends State<DiscoverScreen>
   }
 
   void _swipeRightByButton() {
-    if (_isAnimating || context.read<DiscoverProvider>().currentCard == null)
+    if (_isAnimating || context.read<DiscoverProvider>().currentCard == null) {
       return;
+    }
     final screenWidth = MediaQuery.of(context).size.width;
     _animateAndSwipe(
       targetOffset: Offset(screenWidth * 1.4, 25),
@@ -181,8 +183,9 @@ class _DiscoverScreenState extends State<DiscoverScreen>
   }
 
   void _swipeLeftByButton() {
-    if (_isAnimating || context.read<DiscoverProvider>().currentCard == null)
+    if (_isAnimating || context.read<DiscoverProvider>().currentCard == null) {
       return;
+    }
     final screenWidth = MediaQuery.of(context).size.width;
     _animateAndSwipe(
       targetOffset: Offset(-screenWidth * 1.4, 25),
@@ -192,8 +195,9 @@ class _DiscoverScreenState extends State<DiscoverScreen>
   }
 
   void _swipeUpByButton() {
-    if (_isAnimating || context.read<DiscoverProvider>().currentCard == null)
+    if (_isAnimating || context.read<DiscoverProvider>().currentCard == null) {
       return;
+    }
     final screenHeight = MediaQuery.of(context).size.height;
     _animateAndSwipe(
       targetOffset: Offset(0, -screenHeight * 1.2),
@@ -269,152 +273,35 @@ class _DiscoverScreenState extends State<DiscoverScreen>
     await context.read<DiscoverProvider>().rewind(uid: myUid);
   }
 
-  void _openFilter() {
-    BauhausBottomSheet.show(
-      context: context,
-      title: 'CAMPUS FILTERS',
-      content: const DiscoverFilterBottomSheet(),
-    );
-  }
-
   void _showProfileDetails(StudentProfile profile) {
-    BauhausBottomSheet.show(
-      context: context,
-      title: '${profile.name.toUpperCase()} (PROFILE)',
-      headerColor: BauhausColors.primaryBlue,
-      headerTextColor: Colors.white,
-      content: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Photos carousel / list
-          SizedBox(
-            height: 240,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              itemCount: profile.photos.length,
-              separatorBuilder: (context, index) => const SizedBox(width: 12),
-              itemBuilder: (context, idx) {
-                return Container(
-                  width: 180,
-                  decoration: BoxDecoration(
-                    border: Border.all(color: BauhausColors.border, width: 2.5),
-                  ),
-                  child: Image.network(
-                    profile.photos[idx],
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) =>
-                        const Center(child: Icon(Icons.person, size: 50)),
-                  ),
-                );
-              },
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          // Faculty & Major
-          Wrap(
-            spacing: 6,
-            runSpacing: 6,
-            children: [
-              BauhausBadge(
-                label: profile.faculty,
-                variant: BauhausBadgeVariant.red,
-              ),
-              BauhausBadge(
-                label: profile.major,
-                variant: BauhausBadgeVariant.blue,
-              ),
-              BauhausBadge(
-                label: profile.year,
-                variant: BauhausBadgeVariant.yellow,
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
-
-          // Bio
-          Text('ABOUT', style: BauhausTextStyles.title()),
-          const SizedBox(height: 4),
-          Text(profile.bio, style: BauhausTextStyles.bodyMedium()),
-          const SizedBox(height: 16),
-
-          // Anthem
-          if (profile.anthemSong.isNotEmpty) ...[
-            Text('CAMPUS ANTHEM', style: BauhausTextStyles.title()),
-            const SizedBox(height: 6),
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: BauhausColors.cardYellow,
-                border: Border.all(color: BauhausColors.border, width: 2.0),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.music_note, color: BauhausColors.primaryRed),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      '${profile.anthemSong} — ${profile.anthemArtist}',
-                      style: BauhausTextStyles.bodyMedium().copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-          ],
-
-          // Campus Hangout
-          if (profile.campusHangout.isNotEmpty) ...[
-            Text('FAVORITE CAMPUS HANGOUT', style: BauhausTextStyles.title()),
-            const SizedBox(height: 4),
-            Row(
-              children: [
-                const Icon(
-                  Icons.location_on,
-                  size: 18,
-                  color: BauhausColors.primaryBlue,
-                ),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: Text(
-                    profile.campusHangout,
-                    style: BauhausTextStyles.bodyMedium(),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-          ],
-
-          // Interests
-          Text('INTERESTS & ACTIVITIES', style: BauhausTextStyles.title()),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 6,
-            runSpacing: 6,
-            children: profile.interests.map((interest) {
-              final isCommon = profile.commonInterests.contains(interest);
-              return BauhausBadge(
-                label: interest,
-                variant: isCommon
-                    ? BauhausBadgeVariant.yellow
-                    : BauhausBadgeVariant.surface,
-                icon: isCommon
-                    ? const Icon(
-                        Icons.star,
-                        size: 12,
-                        color: BauhausColors.primaryRed,
-                      )
-                    : null,
-              );
-            }).toList(),
-          ),
-          const SizedBox(height: 20),
-        ],
-      ),
+    ProfilePreviewDialog.show(
+      context,
+      profile,
+      isSelf: false,
+      onPass: () {
+        if (!_isAnimating) {
+          _animateAndSwipe(
+            targetOffset: Offset(-MediaQuery.of(context).size.width * 1.4, 0),
+            onComplete: _triggerPass,
+          );
+        }
+      },
+      onSuperLike: () {
+        if (!_isAnimating) {
+          _animateAndSwipe(
+            targetOffset: Offset(0, -MediaQuery.of(context).size.height * 1.2),
+            onComplete: _triggerSuperLike,
+          );
+        }
+      },
+      onLike: () {
+        if (!_isAnimating) {
+          _animateAndSwipe(
+            targetOffset: Offset(MediaQuery.of(context).size.width * 1.4, 0),
+            onComplete: _triggerLike,
+          );
+        }
+      },
     );
   }
 
@@ -431,10 +318,10 @@ class _DiscoverScreenState extends State<DiscoverScreen>
             // Top Bar
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 color: BauhausColors.surface,
                 border: Border(
-                  bottom: BorderSide(color: BauhausColors.border, width: 3.0),
+                  bottom: BorderSide(color: BauhausColors.border, width: 1.0),
                 ),
               ),
               child: Row(
@@ -445,83 +332,6 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                     'DISCOVER',
                     style: BauhausTextStyles.headlineMedium().copyWith(
                       letterSpacing: 1.0,
-                    ),
-                  ),
-                  const Spacer(),
-                  // Filter Button
-                  GestureDetector(
-                    onTap: _openFilter,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color:
-                            discover.selectedFaculty != 'All' ||
-                                discover.selectedYear != 'All'
-                            ? BauhausColors.primaryYellow
-                            : BauhausColors.surface,
-                        borderRadius: BorderRadius.zero,
-                        border: Border.all(
-                          color: BauhausColors.border,
-                          width: 2.0,
-                        ),
-                        boxShadow: const [
-                          BoxShadow(
-                            color: BauhausColors.border,
-                            offset: Offset(2, 2),
-                          ),
-                        ],
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(
-                            Icons.tune,
-                            size: 16,
-                            color: BauhausColors.foreground,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            discover.selectedFaculty != 'All'
-                                ? discover.selectedFaculty.toUpperCase()
-                                : 'FILTERS',
-                            style: BauhausTextStyles.badge(),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  // Reload Button
-                  GestureDetector(
-                    onTap: () {
-                      final myUid = context.read<AuthProvider>().currentUser.id;
-                      context.read<DiscoverProvider>().loadProfiles(
-                        uid: myUid,
-                        forceRefresh: true,
-                      );
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(
-                        color: BauhausColors.surface,
-                        border: Border.all(
-                          color: BauhausColors.border,
-                          width: 2.0,
-                        ),
-                        boxShadow: const [
-                          BoxShadow(
-                            color: BauhausColors.border,
-                            offset: Offset(2, 2),
-                          ),
-                        ],
-                      ),
-                      child: const Icon(
-                        Icons.refresh,
-                        size: 16,
-                        color: BauhausColors.foreground,
-                      ),
                     ),
                   ),
                 ],
@@ -599,10 +409,10 @@ class _DiscoverScreenState extends State<DiscoverScreen>
             // Bottom Mechanical Action Bar
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 color: BauhausColors.surface,
                 border: Border(
-                  top: BorderSide(color: BauhausColors.border, width: 3.0),
+                  top: BorderSide(color: BauhausColors.border, width: 1.0),
                 ),
               ),
               child: Row(
@@ -697,9 +507,13 @@ class _DiscoverScreenState extends State<DiscoverScreen>
               decoration: BoxDecoration(
                 color: BauhausColors.primaryRed,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: BauhausColors.border, width: 3.0),
-                boxShadow: const [
-                  BoxShadow(color: BauhausColors.border, offset: Offset(3, 3)),
+                border: Border.all(color: BauhausColors.border, width: 1.5),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.15),
+                    blurRadius: 8,
+                    offset: const Offset(0, 3),
+                  ),
                 ],
               ),
               child: Text(
@@ -726,9 +540,13 @@ class _DiscoverScreenState extends State<DiscoverScreen>
               decoration: BoxDecoration(
                 color: BauhausColors.foreground,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.white, width: 2.5),
-                boxShadow: const [
-                  BoxShadow(color: BauhausColors.border, offset: Offset(3, 3)),
+                border: Border.all(color: Colors.white, width: 1.5),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.15),
+                    blurRadius: 8,
+                    offset: const Offset(0, 3),
+                  ),
                 ],
               ),
               child: Text(
@@ -755,9 +573,13 @@ class _DiscoverScreenState extends State<DiscoverScreen>
               decoration: BoxDecoration(
                 color: BauhausColors.primaryYellow,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: BauhausColors.border, width: 3.0),
-                boxShadow: const [
-                  BoxShadow(color: BauhausColors.border, offset: Offset(3, 3)),
+                border: Border.all(color: BauhausColors.border, width: 1.5),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.15),
+                    blurRadius: 8,
+                    offset: const Offset(0, 3),
+                  ),
                 ],
               ),
               child: Text(
@@ -779,19 +601,27 @@ class _DiscoverScreenState extends State<DiscoverScreen>
     required bool isBackground,
   }) {
     const cardRadius = 24.0;
-    const innerRadius = 20.5;
+    const innerRadius = 23.0;
 
     return Container(
       decoration: BoxDecoration(
         color: BauhausColors.surface,
         borderRadius: BorderRadius.circular(cardRadius),
-        border: Border.all(color: BauhausColors.border, width: 3.5),
+        border: Border.all(color: BauhausColors.border, width: 1.0),
         boxShadow: isBackground
-            ? const [
-                BoxShadow(color: BauhausColors.border, offset: Offset(2, 2)),
+            ? [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
               ]
-            : const [
-                BoxShadow(color: BauhausColors.border, offset: Offset(5, 5)),
+            : [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.08),
+                  blurRadius: 20,
+                  offset: const Offset(0, 8),
+                ),
               ],
       ),
       child: ClipRRect(
@@ -810,7 +640,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                     fit: BoxFit.cover,
                     errorBuilder: (context, error, stackTrace) => Container(
                       color: BauhausColors.cardYellow,
-                      child: const Center(
+                      child: Center(
                         child: Icon(
                           Icons.school,
                           size: 80,
@@ -823,21 +653,10 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                   Positioned(
                     top: 14,
                     left: 14,
-                    child: Row(
-                      children: [
-                        BauhausBadge(
-                          label: profile.faculty,
-                          variant: BauhausBadgeVariant.red,
-                          fontSize: 10,
-                        ),
-                        const SizedBox(width: 6),
-                        BauhausBadge(
-                          label: '${profile.distanceKm} KM',
-                          variant: BauhausBadgeVariant.yellow,
-                          fontSize: 10,
-                          icon: const Icon(Icons.near_me, size: 10),
-                        ),
-                      ],
+                    child: BauhausBadge(
+                      label: profile.faculty,
+                      variant: BauhausBadgeVariant.red,
+                      fontSize: 10,
                     ),
                   ),
                   // Verified Badge
@@ -847,16 +666,23 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                       right: 14,
                       child: Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
+                          horizontal: 10,
+                          vertical: 5,
                         ),
                         decoration: BoxDecoration(
                           color: BauhausColors.surface,
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(999),
                           border: Border.all(
                             color: BauhausColors.border,
-                            width: 2.0,
+                            width: 1.0,
                           ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.06),
+                              blurRadius: 6,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
                         ),
                         child: Row(
                           children: [
@@ -883,10 +709,10 @@ class _DiscoverScreenState extends State<DiscoverScreen>
             // Information Bar
             Container(
               padding: const EdgeInsets.all(16),
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 color: BauhausColors.surface,
                 border: Border(
-                  top: BorderSide(color: BauhausColors.border, width: 3.0),
+                  top: BorderSide(color: BauhausColors.border, width: 1.0),
                 ),
               ),
               child: Column(
@@ -922,26 +748,66 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 10),
-                  // Common Interests / Interests Tags
+                  // Highlight Lifestyle & Activity Chips (Tinder-style)
                   Wrap(
                     spacing: 6,
-                    runSpacing: 4,
-                    children: profile.interests.take(3).map((interest) {
-                      final isCommon = profile.commonInterests.contains(
-                        interest,
-                      );
-                      return BauhausBadge(
-                        label: interest,
-                        variant: isCommon
-                            ? BauhausBadgeVariant.yellow
-                            : BauhausBadgeVariant.surface,
-                        fontSize: 9,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 2,
-                        ),
-                      );
-                    }).toList(),
+                    runSpacing: 5,
+                    children: [
+                      // Top 2-3 structured interest highlights with icons (e.g. Dating For, Zodiac, Workout)
+                      ...profile.profileInterests.displayItems.take(3).map((
+                        item,
+                      ) {
+                        return Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 9,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: BauhausColors.cardYellow,
+                            borderRadius: BorderRadius.circular(999),
+                            border: Border.all(
+                              color: BauhausColors.border,
+                              width: 1.0,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                item.icon,
+                                size: 12,
+                                color: BauhausColors.primaryRed,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                item.value,
+                                style: BauhausTextStyles.badge().copyWith(
+                                  fontSize: 9.5,
+                                  color: BauhausColors.foreground,
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }),
+                      // Campus activity tags
+                      ...profile.activities.take(2).map((activity) {
+                        final isCommon = profile.commonInterests.contains(
+                          activity,
+                        );
+                        return BauhausBadge(
+                          label: activity,
+                          variant: isCommon
+                              ? BauhausBadgeVariant.yellow
+                              : BauhausBadgeVariant.surface,
+                          fontSize: 9.5,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                        );
+                      }),
+                    ],
                   ),
                 ],
               ),
@@ -956,13 +822,17 @@ class _DiscoverScreenState extends State<DiscoverScreen>
     final myUid = context.read<AuthProvider>().currentUser.id;
     return Center(
       child: Container(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(28),
         decoration: BoxDecoration(
           color: BauhausColors.surface,
           borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: BauhausColors.border, width: 3.5),
-          boxShadow: const [
-            BoxShadow(color: BauhausColors.border, offset: Offset(5, 5)),
+          border: Border.all(color: BauhausColors.border, width: 1.0),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.08),
+              blurRadius: 20,
+              offset: const Offset(0, 8),
+            ),
           ],
         ),
         child: Column(
@@ -997,9 +867,13 @@ class _DiscoverScreenState extends State<DiscoverScreen>
         decoration: BoxDecoration(
           color: BauhausColors.surface,
           borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: BauhausColors.border, width: 3.5),
-          boxShadow: const [
-            BoxShadow(color: BauhausColors.border, offset: Offset(5, 5)),
+          border: Border.all(color: BauhausColors.border, width: 1.0),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.08),
+              blurRadius: 20,
+              offset: const Offset(0, 8),
+            ),
           ],
         ),
         child: Column(
@@ -1012,7 +886,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                 valueColor: AlwaysStoppedAnimation<Color>(
                   BauhausColors.primaryRed,
                 ),
-                strokeWidth: 3.5,
+                strokeWidth: 3.0,
               ),
             ),
             const SizedBox(height: 20),
@@ -1065,7 +939,7 @@ class _TactileCircleButtonState extends State<_TactileCircleButton> {
       onTapCancel: isEnabled ? () => setState(() => _isPressed = false) : null,
       onTap: widget.onTap,
       child: AnimatedScale(
-        scale: _isPressed ? 0.88 : 1.0,
+        scale: _isPressed ? 0.90 : 1.0,
         duration: const Duration(milliseconds: 100),
         curve: Curves.easeOutCubic,
         child: AnimatedContainer(
@@ -1075,15 +949,17 @@ class _TactileCircleButtonState extends State<_TactileCircleButton> {
           decoration: BoxDecoration(
             color: widget.color,
             shape: BoxShape.circle,
-            border: Border.all(color: BauhausColors.border, width: 2.5),
+            border: Border.all(color: BauhausColors.border, width: 1.0),
             boxShadow: isEnabled
                 ? [
                     BoxShadow(
-                      color: BauhausColors.border,
+                      color: Colors.black.withValues(
+                        alpha: _isPressed ? 0.04 : 0.08,
+                      ),
+                      blurRadius: _isPressed ? 4 : 10,
                       offset: _isPressed
-                          ? const Offset(1, 1)
-                          : const Offset(2.5, 3),
-                      blurRadius: 0,
+                          ? const Offset(0, 1)
+                          : const Offset(0, 3),
                     ),
                   ]
                 : null,
