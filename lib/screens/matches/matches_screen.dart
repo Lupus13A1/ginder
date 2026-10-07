@@ -6,6 +6,7 @@ import '../../widgets/bauhaus_shapes.dart';
 import '../../widgets/bauhaus_badge.dart';
 import '../../models/match_model.dart';
 import '../../providers/chat_provider.dart';
+import '../../providers/app_config_provider.dart';
 import '../../routes/app_routes.dart';
 
 class MatchesScreen extends StatefulWidget {
@@ -27,6 +28,7 @@ class _MatchesScreenState extends State<MatchesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final appConfig = context.watch<AppConfigProvider>();
     final chatProvider = context.watch<ChatProvider>();
     final allConversations = chatProvider.conversations;
 
@@ -269,7 +271,9 @@ class _MatchesScreenState extends State<MatchesScreen> {
                           child: Text(
                             'No campus conversations found',
                             style: BauhausTextStyles.bodyMedium(
-                              color: Colors.grey.shade600,
+                              color: appConfig.isDark
+                                  ? const Color(0xFF94A3B8)
+                                  : Colors.grey.shade600,
                             ),
                           ),
                         ),
@@ -359,7 +363,7 @@ class _MatchesScreenState extends State<MatchesScreen> {
                   BauhausTextStyles.bodyMedium(
                     color: hasUnread
                         ? BauhausColors.foreground
-                        : Colors.grey.shade700,
+                        : BauhausColors.textSecondary,
                   ).copyWith(
                     fontWeight: hasUnread ? FontWeight.w800 : FontWeight.w500,
                     fontSize: 12,
@@ -434,7 +438,9 @@ class _MatchesScreenState extends State<MatchesScreen> {
             Text(
               'Swipe right on students in Campus Discover to make mutual matches and start chatting!',
               textAlign: TextAlign.center,
-              style: BauhausTextStyles.bodyMedium(color: Colors.grey.shade700),
+              style: BauhausTextStyles.bodyMedium(
+                color: BauhausColors.textSecondary,
+              ),
             ),
           ],
         ),

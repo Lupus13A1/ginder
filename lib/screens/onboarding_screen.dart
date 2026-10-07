@@ -6,6 +6,7 @@ import '../../widgets/bauhaus_shapes.dart';
 import '../../widgets/bauhaus_button.dart';
 import '../../widgets/bauhaus_card.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/app_config_provider.dart';
 import '../../routes/app_routes.dart';
 
 class OnboardingScreen extends StatefulWidget {
@@ -24,34 +25,49 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       'step': '01',
       'shape': BauhausCornerBadgeType.circleRed,
       'color': BauhausColors.primaryRed,
-      'title': 'DISCOVER YOUR CAMPUS',
-      'subtitle': 'CROSS-FACULTY CONNECTIONS',
-      'desc':
+      'title_en': 'DISCOVER YOUR CAMPUS',
+      'title_th': 'ค้นพบเพื่อนในมหาวิทยาลัย',
+      'subtitle_en': 'CROSS-FACULTY CONNECTIONS',
+      'subtitle_th': 'เชื่อมต่อหลากหลายคณะ',
+      'desc_en':
           'Find students across faculties, majors, and study years. Discover shared passions in art, coding, sports, and music.',
+      'desc_th':
+          'ค้นหาเพื่อนนักศึกษาต่างคณะ ต่างสาขา และต่างชั้นปี แชร์ความสนใจด้านศิลปะ โค้ดดิ้ง กีฬา และดนตรีร่วมกัน',
       'icon': Icons.explore,
-      'tag': 'VERIFIED STUDENTS ONLY',
+      'tag_en': 'VERIFIED STUDENTS ONLY',
+      'tag_th': 'เฉพาะนักศึกษาตัวจริง',
     },
     {
       'step': '02',
       'shape': BauhausCornerBadgeType.squareBlue,
       'color': BauhausColors.primaryBlue,
-      'title': 'LIKE OR PASS WITH EASE',
-      'subtitle': 'GEOMETRIC CARD STACK',
-      'desc':
+      'title_en': 'LIKE OR PASS WITH EASE',
+      'title_th': 'ถูกใจหรือข้ามได้ง่ายดาย',
+      'subtitle_en': 'GEOMETRIC CARD STACK',
+      'subtitle_th': 'การ์ดเรขาคณิตบาวเฮาส์',
+      'desc_en':
           'Swipe right to Like, left to Pass, or send a Super Like to make a bold impression on your university crush.',
+      'desc_th':
+          'ปัดขวาเพื่อกดถูกใจ ปัดซ้ายเพื่อข้าม หรือส่ง Super Like เพื่อสร้างความประทับใจให้กับคนที่คุณสนใจ',
       'icon': Icons.swap_horiz,
-      'tag': 'TACTILE SWIPE ENGINE',
+      'tag_en': 'TACTILE SWIPE ENGINE',
+      'tag_th': 'ระบบปัดการ์ดลื่นไหล',
     },
     {
       'step': '03',
       'shape': BauhausCornerBadgeType.triangleYellow,
       'color': BauhausColors.primaryYellow,
-      'title': 'MATCH & START CHATTING',
-      'subtitle': 'SAFETY FIRST & DIRECT CHAT',
-      'desc':
+      'title_en': 'MATCH & START CHATTING',
+      'title_th': 'แมตช์แล้วเริ่มพูดคุยทันที',
+      'subtitle_en': 'SAFETY FIRST & DIRECT CHAT',
+      'subtitle_th': 'ปลอดภัยและส่งข้อความตรง',
+      'desc_en':
           'When mutual attraction occurs, break the ice instantly with custom campus conversation starters and hangout invites.',
+      'desc_th':
+          'เมื่อถูกใจตรงกัน เริ่มต้นบทสนทนาได้ทันทีด้วยหัวข้อทักทายและคำชวนไปทำกิจกรรมร่วมกันในมหาลัย',
       'icon': Icons.favorite,
-      'tag': 'STUDENT VERIFIED CHAT',
+      'tag_en': 'STUDENT VERIFIED CHAT',
+      'tag_th': 'แชทนักศึกษาปลอดภัย',
     },
   ];
 
@@ -69,19 +85,31 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   Future<void> _finishOnboarding() async {
     await context.read<AuthProvider>().completeOnboarding();
     if (mounted) {
+      await context.read<AppConfigProvider>().completeOnboarding();
       Navigator.of(context).pushReplacementNamed(AppRoutes.register);
+    }
+  }
+
+  Future<void> _skipOnboarding() async {
+    await context.read<AuthProvider>().completeOnboarding();
+    if (mounted) {
+      await context.read<AppConfigProvider>().completeOnboarding();
+      Navigator.of(context).pushReplacementNamed(AppRoutes.login);
     }
   }
 
   Future<void> _goToLogin() async {
     await context.read<AuthProvider>().completeOnboarding();
     if (mounted) {
+      await context.read<AppConfigProvider>().completeOnboarding();
       Navigator.of(context).pushReplacementNamed(AppRoutes.login);
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final appConfig = context.watch<AppConfigProvider>();
+
     return Scaffold(
       backgroundColor: BauhausColors.background,
       body: SafeArea(
@@ -90,19 +118,36 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Header
+              // Header with Brand Mark, Skip and Log In buttons
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   const GeometricBrandMark(size: 14, spacing: 6),
-                  TextButton(
-                    onPressed: _goToLogin,
-                    child: Text(
-                      'LOG IN',
-                      style: BauhausTextStyles.button(
-                        color: BauhausColors.foreground,
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      TextButton(
+                        onPressed: _skipOnboarding,
+                        child: Text(
+                          appConfig.tr('SKIP', 'ข้าม'),
+                          style: BauhausTextStyles.button(
+                            color: BauhausColors.foreground.withValues(
+                              alpha: 0.65,
+                            ),
+                          ),
+                        ),
                       ),
-                    ),
+                      const SizedBox(width: 4),
+                      TextButton(
+                        onPressed: _goToLogin,
+                        child: Text(
+                          appConfig.tr('LOG IN', 'เข้าสู่ระบบ'),
+                          style: BauhausTextStyles.button(
+                            color: BauhausColors.foreground,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -196,7 +241,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                                       ),
                                     ),
                                     child: Text(
-                                      slide['tag'] as String,
+                                      appConfig.tr(
+                                        slide['tag_en'] as String,
+                                        slide['tag_th'] as String,
+                                      ),
                                       style: BauhausTextStyles.badge().copyWith(
                                         fontSize: 10,
                                       ),
@@ -228,21 +276,32 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                               ),
                               const SizedBox(height: 24),
                               Text(
-                                (slide['subtitle'] as String).toUpperCase(),
+                                appConfig
+                                    .tr(
+                                      slide['subtitle_en'] as String,
+                                      slide['subtitle_th'] as String,
+                                    )
+                                    .toUpperCase(),
                                 style: BauhausTextStyles.badge(
                                   color: BauhausColors.primaryRed,
                                 ),
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                slide['title'] as String,
+                                appConfig.tr(
+                                  slide['title_en'] as String,
+                                  slide['title_th'] as String,
+                                ),
                                 style: BauhausTextStyles.headlineLarge(),
                               ),
                               const SizedBox(height: 12),
                               Text(
-                                slide['desc'] as String,
+                                appConfig.tr(
+                                  slide['desc_en'] as String,
+                                  slide['desc_th'] as String,
+                                ),
                                 style: BauhausTextStyles.bodyLarge(
-                                  color: Colors.grey.shade800,
+                                  color: BauhausColors.textSecondary,
                                 ),
                               ),
                             ],
@@ -261,7 +320,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 children: [
                   if (_currentIndex > 0) ...[
                     BauhausButton.outline(
-                      text: 'BACK',
+                      text: appConfig.tr('BACK', 'ย้อนกลับ'),
                       height: 52,
                       onPressed: () {
                         _pageController.previousPage(
@@ -275,8 +334,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   Expanded(
                     child: BauhausButton(
                       text: _currentIndex == _slides.length - 1
-                          ? 'GET STARTED'
-                          : 'CONTINUE',
+                          ? appConfig.tr('GET STARTED', 'เริ่มต้นใช้งาน')
+                          : appConfig.tr('CONTINUE', 'ถัดไป'),
                       isFullWidth: true,
                       height: 52,
                       variant: _currentIndex == 1

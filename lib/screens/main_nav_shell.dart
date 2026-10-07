@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../theme/bauhaus_colors.dart';
 import '../providers/chat_provider.dart';
 import '../providers/notification_provider.dart';
+import '../providers/app_config_provider.dart';
 import 'discover/discover_screen.dart';
 import 'matches/matches_screen.dart';
 import 'notifications/notifications_screen.dart';
@@ -21,13 +22,6 @@ class MainNavShell extends StatefulWidget {
 class _MainNavShellState extends State<MainNavShell> {
   late int _currentIndex;
 
-  final List<Widget> _screens = const [
-    DiscoverScreen(),
-    MatchesScreen(),
-    NotificationsScreen(),
-    MyProfileScreen(),
-  ];
-
   @override
   void initState() {
     super.initState();
@@ -43,12 +37,20 @@ class _MainNavShellState extends State<MainNavShell> {
 
   @override
   Widget build(BuildContext context) {
+    final appConfig = context.watch<AppConfigProvider>();
     final unreadChats = context.watch<ChatProvider>().totalUnreadCount;
     final unreadNotifs = context.watch<NotificationProvider>().unreadCount;
 
+    final screens = [
+      DiscoverScreen(key: ValueKey('discover_${appConfig.isDark}')),
+      MatchesScreen(key: ValueKey('matches_${appConfig.isDark}')),
+      NotificationsScreen(key: ValueKey('notifs_${appConfig.isDark}')),
+      MyProfileScreen(key: ValueKey('profile_${appConfig.isDark}')),
+    ];
+
     return Scaffold(
       backgroundColor: BauhausColors.background,
-      body: IndexedStack(index: _currentIndex, children: _screens),
+      body: IndexedStack(index: _currentIndex, children: screens),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: BauhausColors.surface,
@@ -136,7 +138,9 @@ class _MainNavShellState extends State<MainNavShell> {
                   Icon(
                     icon,
                     size: 21,
-                    color: isSelected ? tabActiveColor : Colors.grey.shade500,
+                    color: isSelected
+                        ? tabActiveColor
+                        : BauhausColors.textMuted,
                   ),
                   const SizedBox(height: 3),
                   Text(
@@ -147,7 +151,9 @@ class _MainNavShellState extends State<MainNavShell> {
                           ? FontWeight.w800
                           : FontWeight.w600,
                       letterSpacing: 0.3,
-                      color: isSelected ? tabActiveColor : Colors.grey.shade600,
+                      color: isSelected
+                          ? tabActiveColor
+                          : BauhausColors.textMuted,
                     ),
                     maxLines: 1,
                   ),

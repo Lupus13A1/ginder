@@ -8,6 +8,7 @@ import '../../widgets/bauhaus_snackbar.dart';
 import '../../models/chat_message.dart';
 import '../../providers/chat_provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/app_config_provider.dart';
 import '../../services/image_upload_service.dart';
 import '../../models/student_profile.dart';
 import '../../widgets/bauhaus_button.dart';
@@ -315,6 +316,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
   @override
   Widget build(BuildContext context) {
+    context.watch<AppConfigProvider>();
     final chatProvider = context.watch<ChatProvider>();
     final conv = chatProvider.getConversationById(widget.conversationId);
 
@@ -425,7 +427,7 @@ class _ChatScreenState extends State<ChatScreen> {
                             Text(
                               peer.faculty,
                               style: BauhausTextStyles.caption(
-                                color: Colors.grey.shade700,
+                                color: BauhausColors.textSecondary,
                               ),
                             ),
                           ],
@@ -728,13 +730,20 @@ class _ChatScreenState extends State<ChatScreen> {
                   fit: BoxFit.cover,
                   errorBuilder: (ctx, err, stack) => Container(
                     padding: const EdgeInsets.all(12),
-                    color: Colors.grey.shade200,
-                    child: const Row(
+                    color: BauhausColors.muted,
+                    child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.broken_image, size: 24, color: Colors.grey),
-                        SizedBox(width: 6),
-                        Text('Image failed to load'),
+                        Icon(
+                          Icons.broken_image,
+                          size: 24,
+                          color: BauhausColors.textMuted,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          'Image failed to load',
+                          style: TextStyle(color: BauhausColors.textSecondary),
+                        ),
                       ],
                     ),
                   ),
@@ -755,7 +764,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 Text(
                   timeStr,
                   style: BauhausTextStyles.caption(
-                    color: isMe ? Colors.white70 : Colors.grey.shade600,
+                    color: isMe ? Colors.white70 : BauhausColors.textMuted,
                   ).copyWith(fontSize: 9),
                 ),
                 if (isMe) ...[

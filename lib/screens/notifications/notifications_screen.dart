@@ -4,12 +4,14 @@ import '../../theme/bauhaus_colors.dart';
 import '../../theme/bauhaus_text_styles.dart';
 import '../../models/notification_model.dart';
 import '../../providers/notification_provider.dart';
+import '../../providers/app_config_provider.dart';
 
 class NotificationsScreen extends StatelessWidget {
   const NotificationsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    context.watch<AppConfigProvider>();
     final notifProvider = context.watch<NotificationProvider>();
     final notifications = notifProvider.notifications;
 
@@ -114,11 +116,7 @@ class NotificationsScreen extends StatelessWidget {
               ),
             ),
 
-            Divider(
-              thickness: 2.0,
-              color: BauhausColors.border,
-              height: 2,
-            ),
+            Divider(thickness: 2.0, color: BauhausColors.border, height: 2),
 
             // Notification Feed
             Expanded(
@@ -126,7 +124,9 @@ class NotificationsScreen extends StatelessWidget {
                   ? Center(
                       child: Text(
                         'No campus notifications in this category.',
-                        style: BauhausTextStyles.bodyMedium(),
+                        style: BauhausTextStyles.bodyMedium(
+                          color: BauhausColors.textSecondary,
+                        ),
                       ),
                     )
                   : ListView.builder(
@@ -222,14 +222,14 @@ class NotificationsScreen extends StatelessWidget {
                     Text(
                       item.message,
                       style: BauhausTextStyles.bodyMedium(
-                        color: Colors.grey.shade800,
+                        color: BauhausColors.textSecondary,
                       ).copyWith(fontSize: 12),
                     ),
                     const SizedBox(height: 6),
                     Text(
                       _formatTime(item.timestamp),
                       style: BauhausTextStyles.caption(
-                        color: Colors.grey.shade600,
+                        color: BauhausColors.textMuted,
                       ).copyWith(fontSize: 9),
                     ),
                   ],

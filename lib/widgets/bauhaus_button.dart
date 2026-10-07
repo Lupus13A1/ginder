@@ -124,7 +124,7 @@ class _BauhausButtonState extends State<BauhausButton> {
   }
 
   Color _getTextColor() {
-    if (widget.onPressed == null) return Colors.grey.shade600;
+    if (widget.onPressed == null) return BauhausColors.textMuted;
     switch (widget.variant) {
       case BauhausButtonVariant.primaryRed:
       case BauhausButtonVariant.primaryBlue:

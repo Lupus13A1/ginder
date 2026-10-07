@@ -84,13 +84,13 @@ class BauhausBadge extends StatelessWidget {
       case BauhausBadgeVariant.muted:
         return BauhausColors.foreground;
       case BauhausBadgeVariant.success:
-        return BauhausColors.successDark;
+        return BauhausColors.successText;
       case BauhausBadgeVariant.warning:
-        return BauhausColors.warningDark;
+        return BauhausColors.warningText;
       case BauhausBadgeVariant.error:
-        return BauhausColors.errorDark;
+        return BauhausColors.errorText;
       case BauhausBadgeVariant.info:
-        return BauhausColors.infoDark;
+        return BauhausColors.infoText;
     }
   }
 

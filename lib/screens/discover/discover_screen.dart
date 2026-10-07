@@ -11,6 +11,7 @@ import '../../models/student_profile.dart';
 import '../../providers/discover_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/notification_provider.dart';
+import '../../providers/app_config_provider.dart';
 import '../../models/notification_model.dart';
 
 import '../profile/profile_preview_dialog.dart';
@@ -307,6 +308,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
 
   @override
   Widget build(BuildContext context) {
+    final appConfig = context.watch<AppConfigProvider>();
     final discover = context.watch<DiscoverProvider>();
     final currentCard = discover.currentCard;
 
@@ -742,7 +744,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                   Text(
                     profile.bio,
                     style: BauhausTextStyles.bodyMedium(
-                      color: Colors.grey.shade800,
+                      color: BauhausColors.textSecondary,
                     ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
@@ -899,7 +901,9 @@ class _DiscoverScreenState extends State<DiscoverScreen>
             const SizedBox(height: 8),
             Text(
               'Fetching real student profiles from database',
-              style: BauhausTextStyles.bodyMedium(color: Colors.grey.shade700),
+              style: BauhausTextStyles.bodyMedium(
+                color: BauhausColors.textSecondary,
+              ),
             ),
           ],
         ),

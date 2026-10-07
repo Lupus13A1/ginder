@@ -190,7 +190,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
                   'We\'ve sent a verification link to your email. Please check your inbox and click the link to activate your account.',
                   textAlign: TextAlign.center,
                   style: BauhausTextStyles.bodyMedium(
-                    color: Colors.grey.shade700,
+                    color: BauhausColors.textSecondary,
                   ),
                 ),
 
@@ -282,7 +282,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
                         '• Wait a few minutes and try resending\n'
                         '• Contact support if the problem persists',
                         style: BauhausTextStyles.caption(
-                          color: Colors.grey.shade700,
+                          color: BauhausColors.textSecondary,
                         ),
                       ),
                     ],

@@ -14,6 +14,7 @@ import '../../widgets/bauhaus_snackbar.dart';
 import '../../widgets/bauhaus_bottom_sheet.dart';
 import '../../models/profile_interests.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/app_config_provider.dart';
 import '../../services/google_drive_service.dart';
 import 'profile_preview_dialog.dart';
 
@@ -433,7 +434,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               children: [
                 Text(
                   'Select languages you speak or are learning:',
-                  style: BauhausTextStyles.caption(color: Colors.grey.shade700),
+                  style: BauhausTextStyles.caption(
+                    color: BauhausColors.textSecondary,
+                  ),
                 ),
                 const SizedBox(height: 14),
                 Wrap(
@@ -507,7 +510,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           children: [
             Text(
               'Select what describes you best:',
-              style: BauhausTextStyles.caption(color: Colors.grey.shade700),
+              style: BauhausTextStyles.caption(
+                color: BauhausColors.textSecondary,
+              ),
             ),
             const SizedBox(height: 12),
             ...cat.options.map((option) {
@@ -634,6 +639,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    context.watch<AppConfigProvider>();
     return Scaffold(
       backgroundColor: BauhausColors.background,
       appBar: BauhausAppBar(
@@ -976,7 +982,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                                 child: Text(
                                                   '${index + 1}',
                                                   style: TextStyle(
-                                                    color: Colors.grey.shade500,
+                                                    color:
+                                                        BauhausColors.textMuted,
                                                     fontWeight: FontWeight.w800,
                                                     fontSize: 9,
                                                   ),
@@ -1358,7 +1365,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     Text(
                       'Select university hobbies, clubs, and topics you care about',
                       style: BauhausTextStyles.caption(
-                        color: Colors.grey.shade600,
+                        color: BauhausColors.textSecondary,
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -1426,7 +1433,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     Text(
                       'Configure your dating intent, lifestyle, zodiac, habits & more',
                       style: BauhausTextStyles.caption(
-                        color: Colors.grey.shade600,
+                        color: BauhausColors.textSecondary,
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -1476,7 +1483,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                               fontSize: 13,
                                             )
                                           : BauhausTextStyles.bodyMedium(
-                                              color: Colors.grey.shade500,
+                                              color: BauhausColors.textMuted,
                                             ).copyWith(fontSize: 13),
                                     ),
                                   ),
@@ -1486,16 +1493,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                     size: 18,
                                     color: hasVal
                                         ? BauhausColors.primaryBlue
-                                        : Colors.grey.shade400,
+                                        : BauhausColors.textMuted,
                                   ),
                                 ],
                               ),
                             ),
                           ),
-                          Divider(
-                            height: 1,
-                            color: BauhausColors.borderSubtle,
-                          ),
+                          Divider(height: 1, color: BauhausColors.borderSubtle),
                         ],
                       );
                     }),

@@ -177,7 +177,7 @@ class _ProfilePreviewDialogState extends State<ProfilePreviewDialog> {
                     margin: const EdgeInsets.fromLTRB(12, 10, 12, 12),
                     height: 480,
                     decoration: BoxDecoration(
-                      color: Colors.grey.shade300,
+                      color: BauhausColors.muted,
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
                         color: BauhausColors.border,
@@ -813,7 +813,7 @@ class _ProfilePreviewDialogState extends State<ProfilePreviewDialog> {
                                   height: 80,
                                   decoration: BoxDecoration(
                                     borderRadius: BorderRadius.circular(12),
-                                    color: Colors.grey.shade300,
+                                    color: BauhausColors.muted,
                                     image: photoUrl.isNotEmpty
                                         ? DecorationImage(
                                             image: NetworkImage(photoUrl),

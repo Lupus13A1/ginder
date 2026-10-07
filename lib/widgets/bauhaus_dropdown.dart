@@ -100,7 +100,7 @@ class BauhausDropdown<T> extends StatelessWidget {
                   ? Text(
                       hintText!,
                       style: BauhausTextStyles.bodyMedium(
-                        color: Colors.grey.shade500,
+                        color: BauhausColors.textMuted,
                       ),
                       overflow: TextOverflow.ellipsis,
                     )

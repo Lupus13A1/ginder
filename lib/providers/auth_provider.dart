@@ -28,8 +28,9 @@ class AuthProvider extends ChangeNotifier {
   bool _notifyMessages = true;
   bool _notifyLikes = true;
   final List<String> _blockedUsers = ['blocked_user_99'];
+  final SharedPreferences? _prefs;
 
-  AuthProvider([SharedPreferences? prefs]) {
+  AuthProvider([SharedPreferences? prefs]) : _prefs = prefs {
     if (prefs != null) {
       _isOnboarded = prefs.getBool(_onboardingCompleteKey) ?? false;
       _hasLoadedOnboarded = true;
@@ -358,9 +359,10 @@ class AuthProvider extends ChangeNotifier {
 
   Future<void> completeOnboarding() async {
     _isOnboarded = true;
+    _hasLoadedOnboarded = true;
     notifyListeners();
     try {
-      final prefs = await SharedPreferences.getInstance();
+      final prefs = _prefs ?? await SharedPreferences.getInstance();
       await prefs.setBool(_onboardingCompleteKey, true);
     } catch (e) {
       debugPrint('Error saving onboarding state: $e');
@@ -427,7 +429,11 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<void> logout() async {
-    await _auth.signOut();
+    try {
+      await _auth.signOut();
+    } catch (e) {
+      debugPrint('Error signing out of Firebase: $e');
+    }
     if (!kIsWeb) {
       try {
         await GoogleSignIn.instance.signOut();

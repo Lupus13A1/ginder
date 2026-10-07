@@ -10,6 +10,7 @@ import '../../widgets/bauhaus_bottom_sheet.dart';
 import '../../widgets/bauhaus_snackbar.dart';
 import '../../models/student_profile.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/app_config_provider.dart';
 import '../../routes/app_routes.dart';
 import 'profile_preview_dialog.dart';
 
@@ -18,6 +19,7 @@ class MyProfileScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    context.watch<AppConfigProvider>();
     final auth = context.watch<AuthProvider>();
     final user = auth.currentUser;
 
@@ -197,7 +199,7 @@ class MyProfileScreen extends StatelessWidget {
                             Text(
                               user.studentEmail,
                               style: BauhausTextStyles.caption(
-                                color: Colors.grey.shade600,
+                                color: BauhausColors.textMuted,
                               ),
                             ),
                           ],
@@ -462,7 +464,8 @@ class MyProfileScreen extends StatelessWidget {
                                         '${item.label}: ',
                                         style: BauhausTextStyles.badge()
                                             .copyWith(
-                                              color: Colors.grey.shade700,
+                                              color:
+                                                  BauhausColors.textSecondary,
                                               fontSize: 10,
                                             ),
                                       ),
@@ -540,7 +543,9 @@ class MyProfileScreen extends StatelessWidget {
             const SizedBox(height: 14),
             Text(
               'Complete your profile to 100% to boost matches and connect with campus peers.',
-              style: BauhausTextStyles.caption(color: Colors.grey.shade600),
+              style: BauhausTextStyles.caption(
+                color: BauhausColors.textSecondary,
+              ),
             ),
             const SizedBox(height: 14),
             ...checklist.map((item) {
@@ -597,7 +602,7 @@ class MyProfileScreen extends StatelessWidget {
                             size: 13,
                             color: item.isCompleted
                                 ? Colors.white
-                                : Colors.grey.shade400,
+                                : BauhausColors.textMuted,
                           ),
                         ),
                         const SizedBox(width: 10),
@@ -608,7 +613,7 @@ class MyProfileScreen extends StatelessWidget {
                               fontSize: 13,
                               color: item.isCompleted
                                   ? BauhausColors.foreground
-                                  : Colors.grey.shade700,
+                                  : BauhausColors.textSecondary,
                               fontWeight: item.isCompleted
                                   ? FontWeight.w500
                                   : FontWeight.w600,
@@ -629,7 +634,7 @@ class MyProfileScreen extends StatelessWidget {
                           Icons.arrow_forward_ios,
                           size: 11,
                           color: item.isCompleted
-                              ? Colors.grey.shade400
+                              ? BauhausColors.textMuted
                               : BauhausColors.primaryBlue,
                         ),
                       ],

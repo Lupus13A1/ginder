@@ -36,29 +36,29 @@ class BauhausAlertBanner extends StatelessWidget {
       case BauhausAlertSeverity.success:
         bg = BauhausColors.successLight;
         border = BauhausColors.successBorder;
-        iconColor = BauhausColors.successDark;
-        textColor = BauhausColors.successDark;
+        iconColor = BauhausColors.successText;
+        textColor = BauhausColors.successText;
         iconData = Icons.check_circle_outline_rounded;
         break;
       case BauhausAlertSeverity.error:
         bg = BauhausColors.errorLight;
         border = BauhausColors.errorBorder;
-        iconColor = BauhausColors.errorDark;
-        textColor = BauhausColors.errorDark;
+        iconColor = BauhausColors.errorText;
+        textColor = BauhausColors.errorText;
         iconData = Icons.error_outline_rounded;
         break;
       case BauhausAlertSeverity.warning:
         bg = BauhausColors.warningLight;
         border = BauhausColors.warningBorder;
-        iconColor = BauhausColors.warningDark;
-        textColor = BauhausColors.warningDark;
+        iconColor = BauhausColors.warningText;
+        textColor = BauhausColors.warningText;
         iconData = Icons.warning_amber_rounded;
         break;
       case BauhausAlertSeverity.info:
         bg = BauhausColors.infoLight;
         border = BauhausColors.infoBorder;
-        iconColor = BauhausColors.infoDark;
-        textColor = BauhausColors.infoDark;
+        iconColor = BauhausColors.infoText;
+        textColor = BauhausColors.infoText;
         iconData = Icons.info_outline_rounded;
         break;
     }

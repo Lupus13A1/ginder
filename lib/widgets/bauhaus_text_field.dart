@@ -121,9 +121,7 @@ class _BauhausTextFieldState extends State<BauhausTextField> {
           decoration: InputDecoration(
             hintText: widget.hintText,
             hintStyle: BauhausTextStyles.bodyMedium(
-              color: BauhausColors.isDark
-                  ? const Color(0xFF64748B)
-                  : Colors.grey.shade500,
+              color: BauhausColors.textMuted,
             ),
             errorText: widget.errorText,
             filled: true,

@@ -249,15 +249,22 @@ class SettingsScreen extends StatelessWidget {
                           _buildSegmentPill(
                             text: appConfig.tr('LIGHT', 'สว่าง'),
                             icon: Icons.light_mode_outlined,
-                            isSelected: !appConfig.isDark,
+                            isSelected: appConfig.themeMode == ThemeMode.light,
                             onTap: () =>
                                 appConfig.setThemeMode(ThemeMode.light),
                           ),
                           _buildSegmentPill(
                             text: appConfig.tr('DARK', 'มืด'),
                             icon: Icons.dark_mode_outlined,
-                            isSelected: appConfig.isDark,
+                            isSelected: appConfig.themeMode == ThemeMode.dark,
                             onTap: () => appConfig.setThemeMode(ThemeMode.dark),
+                          ),
+                          _buildSegmentPill(
+                            text: appConfig.tr('SYSTEM', 'ระบบ'),
+                            icon: Icons.settings_brightness_outlined,
+                            isSelected: appConfig.themeMode == ThemeMode.system,
+                            onTap: () =>
+                                appConfig.setThemeMode(ThemeMode.system),
                           ),
                         ],
                       ),

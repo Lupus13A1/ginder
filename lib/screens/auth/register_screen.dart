@@ -248,7 +248,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               Text(
                 'Join Ginder using your university credentials to connect with peers in your campus community.',
                 style: BauhausTextStyles.bodyMedium(
-                  color: Colors.grey.shade700,
+                  color: BauhausColors.textSecondary,
                 ),
               ),
 

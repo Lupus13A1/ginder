@@ -232,7 +232,7 @@ class _LoginScreenState extends State<LoginScreen> {
               Text(
                 'Enter your email or student ID to access campus partner discovery.',
                 style: BauhausTextStyles.bodyMedium(
-                  color: Colors.grey.shade700,
+                  color: BauhausColors.textSecondary,
                 ),
               ),
 

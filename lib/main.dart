@@ -72,8 +72,12 @@ class GinderApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final appConfig = Provider.of<AppConfigProvider?>(context);
-    final themeMode = appConfig?.themeMode ?? ThemeMode.light;
+    final themeMode = appConfig?.themeMode ?? ThemeMode.system;
     final language = appConfig?.language ?? 'en';
+
+    if (appConfig != null) {
+      BauhausColors.isDark = appConfig.isDark;
+    }
 
     return MaterialApp(
       title: 'GINDER',

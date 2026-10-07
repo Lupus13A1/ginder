@@ -13,6 +13,14 @@ abstract final class BauhausColors {
   static Color get foreground =>
       isDark ? const Color(0xFFF8FAFC) : const Color(0xFF1E293B);
 
+  /// Secondary text color (readable in both light & dark modes)
+  static Color get textSecondary =>
+      isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+
+  /// Muted / placeholder text color
+  static Color get textMuted =>
+      isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8);
+
   /// Premium accent colors (kept variable names for compatibility)
   static const Color primaryRed = Color(0xFFE11D48); // Elegant Rose
   static const Color primaryBlue = Color(0xFF4F46E5); // Deep Indigo
@@ -74,4 +82,12 @@ abstract final class BauhausColors {
       isDark ? const Color(0xFF1E3A8A) : const Color(0xFFDBEAFE);
   static Color get infoBorder =>
       isDark ? const Color(0xFF1E40AF) : const Color(0xFFBFDBFE);
+
+  /// Semantic text colors with high contrast in both light and dark mode
+  static Color get successText =>
+      isDark ? const Color(0xFF6EE7B7) : successDark;
+  static Color get warningText =>
+      isDark ? const Color(0xFFFDE68A) : warningDark;
+  static Color get errorText => isDark ? const Color(0xFFFECACA) : errorDark;
+  static Color get infoText => isDark ? const Color(0xFFBAE6FD) : infoDark;
 }

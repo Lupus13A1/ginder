@@ -10,6 +10,7 @@ import '../../widgets/bauhaus_badge.dart';
 import '../../widgets/bauhaus_snackbar.dart';
 import '../../widgets/bauhaus_alert_banner.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/app_config_provider.dart';
 import '../../routes/app_routes.dart';
 import '../../services/google_drive_service.dart';
 
@@ -154,6 +155,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
 
   @override
   Widget build(BuildContext context) {
+    context.watch<AppConfigProvider>();
     return Scaffold(
       backgroundColor: BauhausColors.background,
       body: SafeArea(
@@ -195,7 +197,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
               Text(
                 'Showcase your personality, campus spots, and favorite anthems to find your ideal university match.',
                 style: BauhausTextStyles.bodyMedium(
-                  color: Colors.grey.shade700,
+                  color: BauhausColors.textSecondary,
                 ),
               ),
 
@@ -494,11 +496,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(
-                      Icons.sync,
-                      size: 11,
-                      color: BauhausColors.foreground,
-                    ),
+                    Icon(Icons.sync, size: 11, color: BauhausColors.foreground),
                     const SizedBox(width: 3),
                     Text(
                       'CHANGE',
@@ -573,7 +571,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                   Text(
                     'ADD PHOTO',
                     style: BauhausTextStyles.badge(
-                      color: Colors.grey.shade700,
+                      color: BauhausColors.textSecondary,
                     ).copyWith(fontSize: 9),
                   ),
                   Text(

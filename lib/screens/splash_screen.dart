@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -20,6 +21,8 @@ class _SplashScreenState extends State<SplashScreen>
   late AnimationController _animController;
   late Animation<double> _scaleAnimation;
   late Animation<double> _rotationAnimation;
+  Timer? _autoTransitionTimer;
+  bool _hasNavigated = false;
 
   @override
   void initState() {
@@ -39,16 +42,32 @@ class _SplashScreenState extends State<SplashScreen>
     ).animate(CurvedAnimation(parent: _animController, curve: Curves.easeOut));
 
     _animController.forward();
+
+    // Automatically transition to the next screen after splash animation
+    _autoTransitionTimer = Timer(const Duration(milliseconds: 1600), () {
+      if (mounted && !_hasNavigated) {
+        _proceed();
+      }
+    });
   }
 
   @override
   void dispose() {
+    _autoTransitionTimer?.cancel();
     _animController.dispose();
     super.dispose();
   }
 
   Future<void> _proceed() async {
-    final auth = context.read<AuthProvider>();
+    if (_hasNavigated || !mounted) return;
+    _hasNavigated = true;
+    _autoTransitionTimer?.cancel();
+
+    AuthProvider? auth;
+    try {
+      auth = context.read<AuthProvider>();
+    } catch (_) {}
+    if (auth == null) return;
 
     // Make sure latest onboarding status from SharedPreferences is loaded
     if (!auth.hasLoadedOnboarded) {
@@ -60,8 +79,8 @@ class _SplashScreenState extends State<SplashScreen>
       } catch (_) {}
     }
 
-    // 1. New users who haven't completed onboarding and are not authenticated -> Onboarding
-    if (!auth.isOnboarded && !auth.isAuthenticated) {
+    // 1. Show Onboarding Screen ONLY if user has not completed or skipped it (first install only)
+    if (!auth.isOnboarded) {
       if (mounted) {
         Navigator.of(context).pushReplacementNamed(AppRoutes.onboarding);
       }
@@ -248,7 +267,7 @@ class _SplashScreenState extends State<SplashScreen>
                 'Form follows attraction. Pure geometric campus connections, study buddies, and university dating.',
                 textAlign: TextAlign.center,
                 style: BauhausTextStyles.bodyMedium(
-                  color: Colors.grey.shade700,
+                  color: BauhausColors.textSecondary,
                 ),
               ),
 
@@ -266,7 +285,9 @@ class _SplashScreenState extends State<SplashScreen>
               Center(
                 child: Text(
                   'BAUHAUS DESIGN SYSTEM V1.0 • CAMPUS VERIFIED',
-                  style: BauhausTextStyles.caption(color: Colors.grey.shade600),
+                  style: BauhausTextStyles.caption(
+                    color: BauhausColors.textMuted,
+                  ),
                 ),
               ),
             ],

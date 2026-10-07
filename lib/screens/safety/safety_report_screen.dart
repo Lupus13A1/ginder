@@ -8,6 +8,7 @@ import '../../widgets/bauhaus_accordion.dart';
 import '../../widgets/bauhaus_app_bar.dart';
 import '../../widgets/bauhaus_snackbar.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/app_config_provider.dart';
 import '../../models/student_profile.dart';
 import 'report_dialog.dart';
 
@@ -16,6 +17,7 @@ class SafetyReportScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    context.watch<AppConfigProvider>();
     final auth = context.watch<AuthProvider>();
     final user = auth.currentUser;
 
@@ -66,7 +68,7 @@ class SafetyReportScreen extends StatelessWidget {
                         Text(
                           'Authenticated via ${user.studentEmail}',
                           style: BauhausTextStyles.caption(
-                            color: Colors.grey.shade700,
+                            color: BauhausColors.textSecondary,
                           ),
                         ),
                       ],
